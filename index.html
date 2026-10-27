@@ -1,0 +1,893 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1e6b4a">
+<title>Central de Pedidos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@600;700&display=swap">
+<style>
+/* Layout: uma coluna de celular (máx. 560px), cabeçalho fixo com o perfil, abas embaixo, cartões de produto com botões grandes */
+:root{
+  --bg:#eef2ef; --card:#ffffff; --ink:#17201b; --muted:#5d6b63; --line:#d5ddd8;
+  --accent:#1e6b4a; --accent-ink:#ffffff; --accent-soft:#dcebe2;
+  --ok:#1e6b4a; --warn:#a35a00; --warn-soft:#fbecd6; --bad:#b3261e; --bad-soft:#f8dedb; --info-soft:#e3e9f4; --info:#2c4a80;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-disp:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --r:12px; --bar:#1e6b4a; --bar-ink:#ffffff;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bar:#163d2b;--bar-ink:#e8eeea}}
+:root[data-theme="dark"]{--bar:#163d2b;--bar-ink:#e8eeea}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111613; --card:#1a211d; --ink:#e8eeea; --muted:#9aa8a0; --line:#2c3630;
+  --accent:#5fbf8e; --accent-ink:#0d1a13; --accent-soft:#1f3a2c;
+  --ok:#5fbf8e; --warn:#f0a94a; --warn-soft:#3a2a12; --bad:#ff8a80; --bad-soft:#3d1b19; --info-soft:#1d2738; --info:#9db8e8;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111613; --card:#1a211d; --ink:#e8eeea; --muted:#9aa8a0; --line:#2c3630;
+  --accent:#5fbf8e; --accent-ink:#0d1a13; --accent-soft:#1f3a2c;
+  --ok:#5fbf8e; --warn:#f0a94a; --warn-soft:#3a2a12; --bad:#ff8a80; --bad-soft:#3d1b19; --info-soft:#1d2738; --info:#9db8e8;
+  color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--f-body);font-size:16px;line-height:1.4;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bar)}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 110px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bar);color:var(--bar-ink)}
+header.top .in{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px;display:flex;align-items:center;gap:10px}
+header.top h1{font-family:var(--f-disp);font-weight:700;font-size:24px;margin:0;letter-spacing:.3px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who{border:1.5px solid currentColor;background:transparent;color:inherit;border-radius:999px;padding:6px 12px;font:700 14px var(--f-body);cursor:pointer;white-space:nowrap}
+h2{font-family:var(--f-disp);font-size:26px;margin:8px 0 4px;text-wrap:balance}
+h3{font-family:var(--f-disp);font-size:20px;margin:18px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+p.help{color:var(--muted);margin:0 0 12px;font-size:15px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px}
+.list{display:flex;flex-direction:column;gap:8px}
+.row{display:grid;grid-template-columns:1fr auto;gap:8px 10px;align-items:center}
+.row .nm{font-weight:700;font-size:17px;min-width:0}
+.row .sub{color:var(--muted);font-size:14px}
+.num{font-variant-numeric:tabular-nums}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{width:46px;height:46px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font:700 24px var(--f-body);cursor:pointer;line-height:1}
+.stepper button:active{background:var(--accent-soft)}
+.stepper input{width:64px;height:46px;text-align:center;font:700 20px var(--f-body);border:2px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-variant-numeric:tabular-nums}
+.stepper input:focus{border-color:var(--accent);outline:none}
+.stepper input.empty{border-style:dashed}
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 10px;font-weight:700;font-size:14px;white-space:nowrap}
+.c-ok{background:var(--accent-soft);color:var(--ok)}
+.c-warn{background:var(--warn-soft);color:var(--warn)}
+.c-bad{background:var(--bad-soft);color:var(--bad)}
+.c-info{background:var(--info-soft);color:var(--info)}
+.c-mute{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 18px;border-radius:12px;border:0;background:var(--accent);color:var(--accent-ink);font:700 17px var(--f-body);cursor:pointer;width:100%}
+.btn.sec{background:var(--card);color:var(--ink);border:1.5px solid var(--line)}
+.btn.bad{background:var(--bad);color:#fff}
+.btn.small{min-height:40px;width:auto;font-size:15px;padding:0 14px}
+.btn:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+.seg button{min-height:44px;border:0;border-radius:9px;background:transparent;color:var(--muted);font:700 16px var(--f-body);cursor:pointer}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.seg button.on.ref{background:var(--warn);color:#fff}
+label.f{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:15px}
+select,input.t{min-height:50px;border:1.5px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:400 17px var(--f-body);padding:0 12px;width:100%}
+.form{display:flex;flex-direction:column;gap:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{min-height:42px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font:700 15px var(--f-body);cursor:pointer}
+.chips button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs .in{max-width:560px;margin:0 auto;display:flex;padding-left:max(4px,env(safe-area-inset-left,0px));padding-right:max(4px,env(safe-area-inset-right,0px))}
+nav.tabs button{flex:1;min-width:0;min-height:60px;border:0;background:none;color:var(--muted);font:700 13px var(--f-body);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;position:relative}
+nav.tabs button svg{width:24px;height:24px}
+nav.tabs button.on{color:var(--accent)}
+nav.tabs button.on::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;border-radius:0 0 3px 3px;background:var(--accent)}
+.badge{position:absolute;top:6px;left:calc(50% + 8px);background:var(--bad);color:#fff;border-radius:999px;font-size:11px;min-width:18px;height:18px;display:grid;place-items:center;padding:0 4px}
+.sticky-sum{position:fixed;left:0;right:0;bottom:calc(60px + env(safe-area-inset-bottom,0px));z-index:19;background:var(--card);border-top:1px solid var(--line)}
+.sticky-sum .in{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:8px;display:flex;gap:10px;align-items:center}
+.sticky-sum .t{flex:1;min-width:0;font-size:14px;color:var(--muted)}
+.sticky-sum .t b{color:var(--ink);font-size:16px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:10px}
+.kpi .v{font-family:var(--f-disp);font-size:30px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.kpi .l{color:var(--muted);font-size:13px;margin-top:4px}
+.big{font-family:var(--f-disp);font-weight:700;font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
+.sep-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.sep-cell{border:1px solid var(--line);border-radius:10px;padding:6px;text-align:center;display:flex;flex-direction:column;gap:4px;align-items:center}
+.sep-cell .l{font-size:12px;color:var(--muted);font-weight:700}
+.sep-cell input{width:100%;max-width:70px;height:40px;text-align:center;font:700 18px var(--f-body);border:1.5px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+.sep-cell input.alt{border-color:var(--accent);background:var(--accent-soft)}
+.roles{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.roles button{display:flex;align-items:center;gap:14px;text-align:left;min-height:72px;padding:12px 16px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;font:400 15px var(--f-body)}
+.roles button b{display:block;font-family:var(--f-disp);font-size:24px}
+.roles button span.d{color:var(--muted)}
+.roles .ic{width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.roles .ic svg{width:26px;height:26px}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--ink);font-size:18px;margin-bottom:4px}
+.sheet-bg{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--card);color:var(--ink);width:100%;max-width:560px;border-radius:18px 18px 0 0;padding:20px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));max-height:85vh;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.sheet h2{margin:0}
+.sheet .acts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top,0px));width:max-content;z-index:60;background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;font-weight:700;max-width:calc(100% - 32px);text-align:center}
+.banner{border-radius:var(--r);padding:12px;margin-bottom:12px;font-size:15px}
+.banner.warn{background:var(--warn-soft);color:var(--warn)}
+.banner.bad{background:var(--bad-soft);color:var(--bad)}
+.lot{display:grid;grid-template-columns:62px 1fr auto;gap:10px;align-items:center}
+.lot .d{font-family:var(--f-disp);font-weight:700;font-size:22px;text-align:center;line-height:1}
+.lot .d small{display:block;font-family:var(--f-body);font-size:12px;color:var(--muted);font-weight:400;margin-top:3px}
+.stripe-bad{border-left:5px solid var(--bad)}
+.stripe-warn{border-left:5px solid var(--warn)}
+.stripe-ok{border-left:5px solid var(--ok)}
+details.card summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:8px;align-items:center;font-weight:700}
+details.card summary::-webkit-details-marker{display:none}
+table.mini{width:100%;border-collapse:collapse;font-size:15px;margin-top:8px}
+table.mini td,table.mini th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
+table.mini td.n,table.mini th.n{text-align:right;font-variant-numeric:tabular-nums}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.mt{margin-top:12px}
+.search{position:relative;margin-bottom:10px}
+@media (prefers-reduced-motion:no-preference){.toast{animation:pop .2s ease-out}@keyframes pop{from{opacity:0;transform:translate(-50%,-8px)}}}
+.etq{border:2px dashed var(--ink);border-radius:8px;padding:12px;background:var(--card);font-size:15px;display:flex;flex-direction:column;gap:3px}
+.etq .en{font-family:var(--f-disp);font-size:24px;font-weight:700;line-height:1.05}
+.etq .ev{font-weight:700;font-size:18px}
+.scrollchips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px}
+.scrollchips button{flex:none;min-height:42px;padding:0 16px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font:700 15px var(--f-body);cursor:pointer}
+.scrollchips button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.loc{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.loc .kpi{cursor:pointer;text-align:left;font:inherit;color:inherit}
+.loc .kpi.on{outline:2.5px solid var(--accent)}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+.flexsp{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.passos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:4px 0 6px}
+.passos span{display:flex;align-items:center;gap:6px;justify-content:center;padding:8px 4px;border-radius:10px;background:var(--card);border:1.5px solid var(--line);color:var(--muted);font-weight:700;font-size:14px}
+.passos span b{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--bg);font-size:12px}
+.passos span.atual{border-color:var(--accent);color:var(--ink)}.passos span.atual b{background:var(--accent);color:var(--accent-ink)}
+.passos span.feito{color:var(--ok)}.passos span.feito b{background:var(--accent-soft);color:var(--ok)}
+.bannerbtn{width:100%;text-align:left;border:0;font:inherit;cursor:pointer;display:block}
+.apagado{opacity:.55}
+.barra{height:8px;background:var(--bg);border-radius:4px;margin-top:6px;overflow:hidden}.barra div{height:100%;border-radius:4px}
+.legenda{display:flex;gap:14px;font-size:13px;color:var(--muted);margin-bottom:8px}.legenda i{display:inline-block;width:12px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.checkrow{display:flex;gap:10px;align-items:flex-start;cursor:pointer}.checkrow input{width:24px;height:24px;margin-top:2px;flex:none;accent-color:var(--accent)}
+.chip.wrap{white-space:normal;border-radius:10px;padding:6px 10px}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);font:inherit;font-weight:700;text-decoration:underline;cursor:pointer}
+input.t.erro{border-color:var(--bad);background:var(--bad-soft)}
+</style>
+
+
+<!-- ============================================================
+  CONFIGURAÇÃO DO FIREBASE
+  Cole aqui os dados do seu projeto (Firebase › Configurações do projeto › Seus apps › Config).
+  Troque SOMENTE o que está entre aspas.
+============================================================ -->
+<script>
+window.FIREBASE_CONFIG = {
+  apiKey: "COLE_AQUI",
+  authDomain: "COLE_AQUI",
+  projectId: "COLE_AQUI",
+  storageBucket: "COLE_AQUI",
+  messagingSenderId: "COLE_AQUI",
+  appId: "COLE_AQUI"
+};
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script>window.PRODUTOS_INICIAIS = [{"cat": "Doces", "cons": "Temperatura ambiente", "id": "biscoito-biscoff", "min": {"palhoca": [1, 2]}, "minC": null, "nome": "Biscoito biscoff", "propria": false, "un": "pacote", "val": null}, {"cat": "Doces", "cons": "Temperatura ambiente", "id": "avela-nozes", "min": {"palhoca": [1, 2]}, "minC": null, "nome": "Avelã nozes", "un": "pote pequeno", "val": 30}, {"cat": "Doces", "cons": "Temperatura ambiente", "id": "nozes-de-pistache", "min": {"palhoca": [1, 1]}, "minC": null, "nome": "Nozes de pistache", "un": "pote pequeno", "val": 30}, {"cat": "Doces", "cons": "Temperatura ambiente", "id": "amendoas", "min": {"palhoca": [2, 4]}, "minC": null, "nome": "Amêndoas", "un": "pote pequeno", "val": 30}, {"cat": "Doces", "cons": "Temperatura ambiente", "id": "kitkat", "min": {"palhoca": [10, 20]}, "minC": null, "nome": "KitKat", "un": "unidade", "val": null}, {"cat": "Molhos", "cons": "Refrigerado (0 a 5 °C)", "id": "molho-de-tomate", "min": {"palhoca": [2, 4]}, "minC": null, "nome": "Molho de tomate", "un": "balde 5 L", "val": 5}, {"cat": "Molhos", "cons": "Refrigerado (0 a 5 °C)", "id": "molho-pesto", "min": {"palhoca": [1, 2]}, "minC": null, "nome": "Molho pesto", "un": "pote pequeno", "val": 5}, {"cat": "Queijos", "cons": "Refrigerado (0 a 5 °C)", "id": "mussarela", "min": {"palhoca": [5, 10]}, "minC": null, "nome": "Mussarela", "un": "pacote", "val": 5}, {"cat": "Queijos", "cons": "Refrigerado (0 a 5 °C)", "id": "mussarela-de-bufala", "min": {"palhoca": [3, 5]}, "minC": null, "nome": "Mussarela de búfala", "un": "pacote", "val": 3}, {"cat": "Queijos", "cons": "Refrigerado (0 a 5 °C)", "id": "provolone", "min": {"palhoca": [2, 3]}, "minC": null, "nome": "Provolone", "un": "pacote", "val": 5}, {"cat": "Queijos", "cons": "Refrigerado (0 a 5 °C)", "id": "parmesao", "min": {"palhoca": [2, 3]}, "minC": null, "nome": "Parmesão", "un": "pacote", "val": 7}, {"cat": "Queijos", "cons": "Refrigerado (0 a 5 °C)", "id": "queijo-brie", "min": {"palhoca": [1, 1]}, "minC": null, "nome": "Queijo brie", "un": "barra", "val": 5}, {"cat": "Queijos", "cons": "Refrigerado (0 a 5 °C)", "id": "gorgonzola", "min": {"palhoca": [1, 2]}, "minC": null, "nome": "Gorgonzola", "un": "pote grande", "val": 5}, {"cat": "Verduras", "cons": "Refrigerado (0 a 5 °C)", "id": "abobrinha", "min": {"palhoca": [1, 2]}, "minC": null, "nome": "Abobrinha", "un": "pote grande", "val": 3}, {"cat": "Verduras", "cons": "Refrigerado (0 a 5 °C)", "id": "tomate-cereja", "min": {"palhoca": [3, 5]}, "minC": null, "nome": "Tomate cereja", "un": "pote grande", "val": 3}, {"cat": "Verduras", "cons": "Refrigerado (0 a 5 °C)", "id": "salsinha", "min": {"palhoca": [1, 2]}, "minC": null, "nome": "Salsinha", "un": "pote pequeno", "val": 2}, {"cat": "Verduras", "cons": "Refrigerado (0 a 5 °C)", "id": "berinjela", "min": {"palhoca": [2, 4]}, "minC": null, "nome": "Berinjela", "un": "pote pequeno", "val": 3}, {"cat": "Verduras", "cons": "Refrigerado (0 a 5 °C)", "id": "alho", "min": {"palhoca": [2, 4]}, "minC": null, "nome": "Alho", "un": "pote pequeno", "val": 5}, {"cat": "Verduras", "cons": "Refrigerado (0 a 5 °C)", "id": "cebola", "min": {"palhoca": [3, 6]}, "minC": null, "nome": "Cebola", "un": "pacote", "val": 3}, {"cat": "Verduras", "cons": "Refrigerado (0 a 5 °C)", "id": "morango", "min": {"palhoca": [2, 3]}, "minC": null, "nome": "Morango", "un": "bandeja", "val": 2}, {"cat": "Verduras", "cons": "Refrigerado (0 a 5 °C)", "id": "abacaxi", "min": {"palhoca": [1, 2]}, "minC": null, "nome": "Abacaxi", "un": "pote pequeno", "val": 2}, {"cat": "Verduras", "cons": "Refrigerado (0 a 5 °C)", "id": "coco-ralado", "min": {"palhoca": [1, 2]}, "minC": null, "nome": "Coco (ralado)", "un": "pote pequeno", "val": 5}, {"cat": "Verduras", "cons": "Refrigerado (0 a 5 °C)", "id": "coco-fatiado", "min": {"palhoca": [1, 2]}, "minC": null, "nome": "Coco (fatiado)", "un": "pote pequeno", "val": 3}, {"cat": "Verduras", "cons": "Refrigerado (0 a 5 °C)", "id": "manjericao", "min": {"palhoca": [1, 2]}, "minC": null, "nome": "Manjericão", "un": "pote grande", "val": 2}, {"cat": "Verduras", "cons": "Refrigerado (0 a 5 °C)", "id": "espinafre", "min": {"palhoca": [1, 2]}, "minC": null, "nome": "Espinafre", "un": "pacote", "val": 2}, {"cat": "Verduras", "cons": "Refrigerado (0 a 5 °C)", "id": "pimentoes", "min": {"palhoca": [2, 4]}, "minC": null, "nome": "Pimentões", "un": "pote pequeno", "val": 3}, {"cat": "Verduras", "cons": "Refrigerado (0 a 5 °C)", "id": "cogumelos", "min": {"palhoca": [1, 2]}, "minC": null, "nome": "Cogumelos", "un": "pote pequeno", "val": 3}, {"cat": "Verduras", "cons": "Refrigerado (0 a 5 °C)", "id": "alho-poro", "min": {"palhoca": [1, 2]}, "minC": null, "nome": "Alho poró", "un": "pote pequeno", "val": 3}, {"cat": "Carnes", "cons": "Refrigerado (0 a 5 °C)", "id": "bacon-cubos", "min": {"palhoca": [20, 40]}, "minC": null, "nome": "Bacon cubos", "un": "porção", "val": 5}, {"cat": "Carnes", "cons": "Refrigerado (0 a 5 °C)", "id": "bacon-fatiado", "min": {"palhoca": [20, 40]}, "minC": null, "nome": "Bacon fatiado", "un": "porção", "val": 5}, {"cat": "Carnes", "cons": "Refrigerado (0 a 5 °C)", "id": "costela", "min": {"palhoca": [20, 40]}, "minC": null, "nome": "Costela", "un": "porção", "val": 3}, {"cat": "Carnes", "cons": "Refrigerado (0 a 5 °C)", "id": "linguica-blumenau", "min": {"palhoca": [15, 30]}, "minC": null, "nome": "Linguiça Blumenau", "un": "porção", "val": 3}, {"cat": "Carnes", "cons": "Refrigerado (0 a 5 °C)", "id": "frango", "min": {"palhoca": [20, 40]}, "minC": null, "nome": "Frango", "un": "porção", "val": 3}, {"cat": "Carnes", "cons": "Refrigerado (0 a 5 °C)", "id": "calabresa", "min": {"palhoca": [20, 40]}, "minC": null, "nome": "Calabresa", "un": "porção", "val": 5}, {"cat": "Outros", "cons": "Refrigerado (0 a 5 °C)", "id": "ovos-cozidos", "min": {"palhoca": [10, 20]}, "minC": null, "nome": "Ovos cozidos", "un": "unidade", "val": 3}, {"cat": "Outros", "cons": "Refrigerado (0 a 5 °C)", "id": "tomate-confitado", "min": {"palhoca": [1, 2]}, "minC": null, "nome": "Tomate confitado", "un": "pote pequeno", "val": 5}, {"cat": "Outros", "cons": "Refrigerado (0 a 5 °C)", "id": "alecrim", "min": {"palhoca": [1, 1]}, "minC": null, "nome": "Alecrim", "un": "pote pequeno", "val": 3}];</script>
+</head>
+<body>
+<header class="top"><div class="in"><h1 id="ttl">Central de Pedidos</h1><button class="who" id="whoBtn" hidden>Trocar</button></div></header>
+<main class="wrap" id="main">
+  <div class="empty"><b>Carregando…</b>Buscando produtos e pedidos.</div>
+</main>
+<div class="sticky-sum" id="sum" hidden><div class="in" id="sumIn"></div></div>
+<nav class="tabs" id="tabs" hidden><div class="in" id="tabsIn"></div></nav>
+
+<script>
+(function(){
+/* ================= utilidades ================= */
+const LOJAS=[{id:'centro',nome:'Centro',sg:'CEN'},{id:'palhoca',nome:'Palhoça',sg:'PAL'},{id:'sj',nome:'São José',sg:'SJO'}];
+const LOCAIS=[{id:'central',nome:'Central'},...LOJAS];
+const nomeLocal=id=>(LOCAIS.find(l=>l.id===id)||{nome:id}).nome;
+const MOTIVOS=['Venceu','Estragou / qualidade','Sobrou (produziu demais)','Caiu / avaria','Erro de produção','Outro'];
+const CONS=['Refrigerado (0 a 5 °C)','Congelado (-18 °C ou menos)','Temperatura ambiente'];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const isoDe=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const hoje=()=>isoDe(new Date());
+const agora=()=>{const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())};
+const toUTC=s=>{const [y,m,d]=s.split('-').map(Number);return Date.UTC(y,m-1,d)};
+const addDias=(s,n)=>{const t=new Date(toUTC(s)+n*864e5);return t.getUTCFullYear()+'-'+pad(t.getUTCMonth()+1)+'-'+pad(t.getUTCDate())};
+const dias=(a,b)=>Math.round((toUTC(b)-toUTC(a))/864e5);
+const br=s=>s?s.slice(8,10)+'/'+s.slice(5,7):'—';
+const brAno=s=>s?s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4):'—';
+const r2=n=>Math.round(n*1000)/1000;
+const fmt=n=>n==null||n===''?'—':(Math.round(n*100)/100).toLocaleString('pt-BR',{useGrouping:false});
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const num=v=>{if(v===''||v==null)return null;const n=Number(String(v).trim().replace(',','.'));return isFinite(n)&&n>=0?n:null};
+const mes=()=>hoje().slice(0,7);
+const mesAnt=()=>{const [y,m]=mes().split('-').map(Number);return m===1?(y-1)+'-12':y+'-'+pad(m-1)};
+const janela=()=>{const a=mes()+'-01',b=addDias(hoje(),-6);return a<b?a:b};
+const LS={get(k,d){try{const v=localStorage.getItem('cp_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('cp_'+k,JSON.stringify(v))}catch(e){}}};
+const ocupado={};async function umaVez(k,fn){if(ocupado[k])return;ocupado[k]=true;try{return await fn()}finally{ocupado[k]=false}}
+const I=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const ICON={
+ loja:I('<path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v1a3 3 0 006 0 3 3 0 006 0 3 3 0 006 0V9M5 13v7h14v-7M10 20v-4h4v4"/>'),
+ central:I('<path d="M6 14a6 6 0 0112 0v2H6zM4 16h16M12 5v3M8 20h8"/>'),
+ gestor:I('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/>'),
+ pedido:I('<path d="M6 4h12v17l-3-2-3 2-3-2-3 2zM9 9h6M9 13h6"/>'),
+ fogo:I('<path d="M12 3c2 3 5 5 5 9a5 5 0 01-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-8z"/>'),
+ mais:I('<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>'),
+ relogio:I('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+ lixo:I('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
+ caminhao:I('<path d="M2 6h12v10H2zM14 10h4l3 3v3h-7"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>'),
+ hist:I('<path d="M3 12a9 9 0 109-9 9 9 0 00-7 3.3M3 4v4h4M12 8v4l3 2"/>'),
+ eng:I('<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>'),
+ inv:I('<path d="M9 4h6v3H9zM7 5H5v16h14V5h-2M9 12l2 2 4-4M9 18h6"/>'),
+ receber:I('<path d="M12 3v12M7 10l5 5 5-5M4 17v3h16v-3"/>'),
+ painel:I('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
+ caixa:I('<path d="M3 7l9-4 9 4-9 4-9-4zM3 7v10l9 4 9-4V7M12 11v10"/>')
+};
+
+/* ================= estado ================= */
+const S={fase:1,produtos:null,cont:{centro:{},palhoca:{},sj:{}},lotes:[],prod:[],lotesL:[],perdas:{},perdasAnt:{},cons:{},consAnt:{},pedidos:[],invs:[],online:false,ro:false};
+let db=null,MODO='claude',USER=null,FIXO=null; // MODO firebase = versão hospedada no GitHub
+let perfil=LS.get('perfil',null),nome=LS.get('nome',''),aba=LS.get('aba',{});
+let passo=LS.get('passo',{});
+let painelLoja=LS.get('pl','todas'),painelDias=LS.get('pd',7),estLocal=LS.get('painel','central'),histSec=LS.get('hist','pedidos'),histLoja=LS.get('hl','todas');
+const pend={centro:{},palhoca:{},sj:{}};const flushT={};
+
+/* ================= regras ================= */
+const F2=()=>S.fase>=2; // etapa 2 = estoque, validade, perdas e inventário
+const P=id=>(S.produtos||[]).find(p=>p.id===id);
+const nomeP=id=>(P(id)||{nome:id}).nome, unP=id=>(P(id)||{un:''}).un;
+const propria=p=>!!p&&(p.propria!=null?p.propria:p.val!=null); // produção própria: loja informa validade no recebimento
+function minLoja(p,loja,modo){const m=p.min&&p.min[loja];if(!m)return null;const v=modo==='reforcado'?m[1]:m[0];return v==null?(modo==='reforcado'?(m[0]??null):null):v}
+const rasc=loja=>S.cont[loja]||{};
+function item(loja,pid){const c=(rasc(loja).itens||{})[pid]||{};const l=pend[loja][pid]||{};return Object.assign({},c,l)}
+const modo=loja=>rasc(loja).modo||'normal';
+function sugestao(loja,p){const it=item(loja,p.id);const m=minLoja(p,loja,modo(loja));if(it.tem==null||m==null)return null;return Math.max(0,Math.ceil(m-it.tem))}
+function qtdPedido(loja,p){const it=item(loja,p.id);if(it.ped!=null)return it.ped;return sugestao(loja,p)||0}
+const itensRevisao=loja=>(S.produtos||[]).filter(p=>qtdPedido(loja,p)>0||item(loja,p.id).ped!=null);
+const extrasRasc=loja=>rasc(loja).extras||[];
+function contados(loja){const ps=S.produtos||[];return{n:ps.filter(p=>item(loja,p.id).tem!=null).length,tot:ps.length}}
+const pedidosDe=loja=>S.pedidos.filter(x=>x.loja===loja);
+const aberto=loja=>S.pedidos.find(x=>x.loja===loja&&x.status==='enviado');
+const aCaminho=loja=>S.pedidos.filter(x=>x.loja===loja&&x.status==='separado');
+const abertos=()=>S.pedidos.filter(x=>x.status==='enviado');
+const qEnv=(pd,pid)=>{const i=pd.itens[pid];return i.env!=null?i.env:i.ped};
+const qExtra=x=>x.env!=null?x.env:x.qtd;
+const STATUS={enviado:['c-warn','Aguardando a central'],separado:['c-info','A caminho'],recebido:['c-ok','Recebido'],cancelado:['c-mute','Cancelado']};
+const chipStatus=s=>`<span class="chip ${STATUS[s][0]}">${STATUS[s][1]}</span>`;
+const codPed=pd=>(LOJAS.find(l=>l.id===pd.loja)||{sg:''}).sg+' '+br(pd.data)+' '+pd.hora;
+const lotesDe=(local,pid)=>(local==='central'?S.lotes:S.lotesL.filter(l=>l.loja===local)).filter(l=>l.resta>0&&(!pid||l.p===pid));
+function estoque(local,pid){const h=hoje();let tot=0,venc=0,logo=0,prox=null;for(const l of lotesDe(local,pid)){tot+=l.resta;if(l.vence&&l.vence<h)venc+=l.resta;else{if(l.vence&&dias(h,l.vence)<=2)logo+=l.resta;if(l.vence&&(!prox||l.vence<prox))prox=l.vence}}return{tot:r2(tot),venc:r2(venc),bom:r2(tot-venc),logo:r2(logo),prox}}
+const fifo=ls=>ls.slice().sort((a,b)=>(a.vence||'0000')<(b.vence||'0000')?-1:(a.vence||'0000')>(b.vence||'0000')?1:((a.data||'')<(b.data||'')?-1:1));
+const vencidosEm=local=>lotesDe(local).filter(l=>l.vence&&l.vence<hoje());
+// produção: vem dos pedidos abertos das lojas + mínimo da central (só se o gestor cadastrou)
+function necessidade(p){const por={};let tot=0;for(const pd of abertos()){if(pd.itens[p.id]){const q=qEnv(pd,p.id);if(q>0){por[pd.loja]=r2((por[pd.loja]||0)+q);tot=r2(tot+q)}}}const bom=F2()?estoque('central',p.id).bom:r2(S.prod.filter(l=>l.p===p.id&&l.data===hoje()&&l.origem==='Produção').reduce((s,l)=>s+l.qtd,0));const falta=Math.max(0,r2(tot-bom));const sobra=Math.max(0,r2(bom-tot));const repor=F2()&&p.minC!=null?Math.max(0,r2(p.minC-sobra)):0;return{por,tot,bom,falta,repor,produzir:r2(falta+repor)}}
+function codigoLote(data){const n=S.prod.filter(l=>l.data===data).length+1;return 'L'+data.slice(8,10)+data.slice(5,7)+'-'+pad(n)}
+const perdasRegs=()=>[...Object.entries(S.perdasAnt.reg||{}),...Object.entries(S.perdas.reg||{})].map(([id,r])=>Object.assign({id},r));
+const consumoDias=()=>Object.assign({},S.consAnt.d||{},S.cons.d||{});
+
+/* ================= gravação ================= */
+function falhou(e){if(e&&e.message==='offline')return;const c=e&&e.code?' ('+e.code+')':'';toast(S.ro?'Este acesso só permite ver. Entre no Claude com o e-mail que o gestor convidou como Editor.':'Não consegui salvar'+c+'. Confira a internet e tente de novo.');try{console.warn('Falha ao salvar',e)}catch(_){}}
+async function upsert(path,patch){
+  if(!db){toast('Sem conexão com os dados. Nada foi salvo.');throw new Error('offline')}
+  const ref=db.doc(path);
+  try{await ref.update(patch)}catch(e){if(e&&e.code==='invalid_argument'){const s=await ref.get().catch(()=>({exists:true}));if(!s.exists){await ref.set(patch);return}}throw e} // só a plataforma decide se é somente leitura (S.ro)
+}
+async function put(path,data){if(!db){toast('Sem conexão com os dados. Nada foi salvo.');throw new Error('offline')}await db.doc(path).set(data)}
+function editaLoja(loja,pid,campo,valor){pend[loja][pid]=Object.assign(pend[loja][pid]||{},{[campo]:valor});clearTimeout(flushT[loja]);flushT[loja]=setTimeout(()=>flush(loja),700)}
+async function flush(loja){
+  clearTimeout(flushT[loja]);const p=pend[loja];const keys=Object.keys(p);if(!keys.length)return;
+  const itens={};keys.forEach(k=>itens[k]=Object.assign({},p[k]));
+  try{await upsert('contagens/'+loja,{itens,atualizado:hoje()+' '+agora()});keys.forEach(k=>{if(JSON.stringify(pend[loja][k])===JSON.stringify(itens[k]))delete pend[loja][k]})}catch(e){falhou(e)}
+}
+window.addEventListener('pagehide',()=>LOJAS.forEach(L=>flush(L.id)));
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')LOJAS.forEach(L=>flush(L.id))});
+async function baixar(local,pid,qtd,{soBons=false,loteId=null}={}){
+  const col=local==='central'?'lotes':'lotesLoja';const h=hoje();
+  let ls=loteId?lotesDe(local,pid).filter(l=>l.id===loteId):fifo(lotesDe(local,pid));
+  if(soBons)ls=ls.filter(l=>!l.vence||l.vence>=h);
+  let falta=qtd;const tiradas=[];
+  for(const l of ls){if(falta<=0)break;const t=r2(Math.min(l.resta,falta));falta=r2(falta-t);l.resta=r2(l.resta-t);await upsert(col+'/'+l.id,{resta:l.resta});tiradas.push({c:l.codigo||'',v:l.vence||null,d:l.data||null,q:t})}
+  return{tiradas,faltou:r2(Math.max(0,falta))};
+}
+async function registrarPerda(local,pid,qtd,motivo,quem,loteId){
+  await baixar(local,pid,qtd,{loteId});
+  await upsert('perdas/'+mes(),{reg:{[uid()]:{data:hoje(),p:pid,qtd,motivo,quem:quem||'',local}}});
+}
+
+/* ================= interface base ================= */
+let toastT;function toast(t){let el=$('#toast');if(!el){el=document.createElement('div');el.id='toast';el.className='toast';el.setAttribute('role','status');document.body.appendChild(el)}el.textContent=t;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,3000)}
+const fechaToast=()=>{const t=$('#toast');if(t)t.hidden=true};
+function sheet(html,onClick){const bg=document.createElement('div');bg.className='sheet-bg';bg.innerHTML=`<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;bg.addEventListener('click',e=>{if(e.target===bg){bg.remove();return}onClick&&onClick(e,()=>bg.remove())});document.body.appendChild(bg);return bg}
+function confirmar(titulo,texto,ok='Confirmar',perigo=false){return new Promise(res=>{const bg=sheet(`<h2>${esc(titulo)}</h2><div>${texto}</div><div class="acts"><button class="btn sec" data-r="0">Voltar</button><button class="btn ${perigo?'bad':''}" data-r="1">${esc(ok)}</button></div>`,(e,close)=>{const r=e.target.closest('[data-r]');if(r){close();res(r.dataset.r==='1')}});bg.addEventListener('click',e=>{if(e.target===bg)res(false)});bg.querySelector('[data-r="1"]').focus()})}
+const val=v=>v==null?'':fmt(v);
+function stepper(id,v,attrs=''){return `<div class="stepper"><button type="button" data-step="-1" data-for="${id}" aria-label="Menos">−</button><input id="${id}" class="${v==null?'empty':''}" type="text" inputmode="decimal" autocomplete="off" value="${val(v)}" placeholder="?" ${attrs} aria-label="Quantidade"><button type="button" data-step="1" data-for="${id}" aria-label="Mais">+</button></div>`}
+function prodSelect(id,sel,filtro){const cats={};(S.produtos||[]).filter(filtro||(()=>true)).forEach(p=>{(cats[p.cat||'Outros']=cats[p.cat||'Outros']||[]).push(p)});return `<select id="${id}"><option value="">Escolha o produto…</option>${Object.keys(cats).map(c=>`<optgroup label="${esc(c)}">${cats[c].map(p=>`<option value="${p.id}" ${sel===p.id?'selected':''}>${esc(p.nome)} (${esc(p.un)})</option>`).join('')}</optgroup>`).join('')}</select>`}
+function byCat(list,fn){const cats=[];const m={};list.forEach(p=>{const c=p.cat||'Outros';if(!m[c]){m[c]=[];cats.push(c)}m[c].push(p)});return cats.map(c=>`<h3>${esc(c)}</h3><div class="list">${m[c].map(fn).join('')}</div>`).join('')}
+const vazio=(t,s='')=>`<div class="card empty"><b>${t}</b>${s}</div>`;
+function chipVence(v){if(!v)return'<span class="chip c-mute">sem validade</span>';const d=dias(hoje(),v);return d<0?'<span class="chip c-bad">VENCIDO</span>':d===0?'<span class="chip c-warn">Vence hoje</span>':d<=2?`<span class="chip c-warn">Vence em ${d} ${d===1?'dia':'dias'}</span>`:`<span class="chip c-ok">${d} dias</span>`}
+const stripe=v=>{if(!v)return'';const d=dias(hoje(),v);return d<0?'stripe-bad':d<=2?'stripe-warn':'stripe-ok'};
+const chips=(attr,opts,cur)=>`<div class="scrollchips">${opts.map(([k,t])=>`<button data-${attr}="${k}" class="${String(cur)===String(k)?'on':''}">${t}</button>`).join('')}</div>`;
+const barra=(v,max,cor='var(--accent)')=>`<div class="barra"><div style="width:${max?Math.max(2,Math.round(v/max*100)):0}%;background:${cor}"></div></div>`;
+
+const TABS={
+ loja:[{id:'pedido',t:'Pedido',i:'pedido'},{id:'receber',t:'Receber',i:'receber'},{id:'lvalid',t:'Validades',i:'relogio',f2:1},{id:'lperdas',t:'Perdas',i:'lixo',f2:1},{id:'lhist',t:'Histórico',i:'hist'}],
+ central:[{id:'produzir',t:'Produzir',i:'fogo'},{id:'producao',t:'Produção',i:'mais'},{id:'validades',t:'Validades',i:'relogio',f2:1},{id:'perdas',t:'Perdas',i:'lixo',f2:1},{id:'inventario',t:'Inventário',i:'inv',f2:1}],
+ gestor:[{id:'separacao',t:'Pedidos',i:'caminhao'},{id:'painel',t:'Painel',i:'painel'},{id:'estoques',t:'Estoques',i:'caixa',f2:1},{id:'historico',t:'Histórico',i:'hist'},{id:'produtos',t:'Produtos',i:'eng'}]
+};
+const tabsDe=tp=>TABS[tp].filter(t=>!t.f2||F2());
+const abaAtual=()=>{const ts=tabsDe(perfil.tipo);const a=aba[perfil.tipo];return ts.find(t=>t.id===a)?a:ts[0].id};
+function irPara(t){aba[perfil.tipo]=t;LS.set('aba',aba);window.scrollTo(0,0);render()}
+
+let deferRender=false,dedoNaTela=false;
+document.addEventListener('pointerdown',()=>{dedoNaTela=true},true);
+const solta=()=>setTimeout(()=>{dedoNaTela=false;if(deferRender)render()},60);
+document.addEventListener('pointerup',solta,true);document.addEventListener('pointercancel',solta,true);
+function render(){
+  const main=$('#main');const ae=document.activeElement;
+  if(dedoNaTela&&perfil){deferRender=true;return}
+  if(ae&&main.contains(ae)&&(ae.tagName==='INPUT'||ae.tagName==='SELECT')&&!ae.dataset.free){deferRender=true;atualizaLeve();return}
+  deferRender=false;
+  if(MODO==='firebase'&&!USER){$('#ttl').textContent='Central de Pedidos';$('#whoBtn').hidden=true;$('#tabs').hidden=true;$('#sum').hidden=true;main.innerHTML=telaLogin();return}
+  if(!perfil){$('#ttl').textContent='Central de Pedidos';$('#whoBtn').hidden=true;$('#tabs').hidden=true;$('#sum').hidden=true;main.innerHTML=telaPerfil();return}
+  $('#whoBtn').hidden=false;
+  const lj=perfil.tipo==='loja'?LOJAS.find(l=>l.id===perfil.loja):null;
+  $('#ttl').textContent=lj?'Loja '+lj.nome:perfil.tipo==='central'?'Central · Produção':'Gestor';
+  $('#whoBtn').textContent=(nome?nome.split(' ')[0]+' · ':'')+'Trocar';
+  const ts=tabsDe(perfil.tipo);const a=abaAtual();
+  $('#tabs').hidden=false;
+  $('#tabsIn').innerHTML=ts.map(t=>`<button data-tab="${t.id}" class="${t.id===a?'on':''}" ${t.id===a?'aria-current="page"':''}>${ICON[t.i]}${t.t}${badge(t.id)}</button>`).join('');
+  let h;
+  if(S.produtos==null)h=`<div class="empty"><b>Carregando…</b>Buscando produtos e pedidos.</div>`;
+  else if(!S.produtos.length&&a!=='produtos')h=vazio('Nenhum produto cadastrado','O gestor carrega o cadastro em Gestor › Produtos.');
+  else h=VIEWS[a]();
+  if(!S.online&&S.produtos!=null)h=`<div class="banner bad">${MODO==='firebase'?'Sem conexão com o banco de dados. Confira a internet.':'Sem conexão com os dados compartilhados. Abra pelo link da Central de Pedidos, entrando na sua conta.'}</div>`+h;
+  else if(S.ro)h=`<div class="banner warn"><b>Este acesso só permite ver.</b> Para lançar pedidos, entre no Claude com o e-mail que o gestor convidou como <b>Editor</b>. Se o link estiver aberto ao público, o gestor precisa desligar o link público no botão Share.</div>`+h;
+  main.innerHTML=h;
+  $('#sum').hidden=true;
+  if(a==='pedido')rodapePedido();
+  if(a==='separacao')rodapeSep();
+}
+function badge(t){if(!S.produtos)return'';let n=0;
+  if(t==='validades')n=vencidosEm('central').length;
+  if(t==='produzir')n=S.produtos.filter(p=>necessidade(p).produzir>0).length;
+  if(t==='receber')n=aCaminho(perfil.loja).length;
+  if(t==='lvalid')n=vencidosEm(perfil.loja).length;
+  if(t==='separacao')n=abertos().length;
+  if(t==='estoques')n=LOCAIS.reduce((s,L)=>s+vencidosEm(L.id).length,0);
+  return n?`<span class="badge">${n}</span>`:''}
+function atualizaLeve(){if(perfil&&abaAtual()==='pedido')rodapePedido()}
+
+/* ================= escolher perfil ================= */
+function telaLogin(){
+  if(window.FIREBASE_CONFIG&&String(window.FIREBASE_CONFIG.apiKey||'').startsWith('COLE'))return `<h2>Falta configurar</h2><div class="banner warn">Cole a configuração do Firebase no começo do arquivo <b>index.html</b> (procure por <b>FIREBASE_CONFIG</b>).</div>`;
+  return `<h2>Entrar</h2><p class="help">Use o e-mail e a senha da sua unidade. O celular fica conectado depois da primeira vez.</p>
+  <div class="card form"><label class="f">E-mail<input class="t" id="lgEmail" type="email" autocomplete="username" inputmode="email" data-free="1" placeholder="palhoca@centralpedidos.app"></label>
+  <label class="f">Senha<input class="t" id="lgSenha" type="password" autocomplete="current-password" data-free="1"></label>
+  <button class="btn" id="entrar">Entrar</button></div>`;
+}
+const PERFIL_EMAIL={centro:'loja:centro',palhoca:'loja:palhoca',saojose:'loja:sj',sj:'loja:sj',central:'central',gestor:'gestor'};
+function telaPerfil(){
+  const so=FIXO&&FIXO!=='gestor';const sair=MODO==='firebase'?`<p class="help mt">Conectado como <b>${esc(USER&&USER.email)}</b> · <button class="linkbtn" id="sair">Sair desta conta</button></p>`:'';
+  if(so){const [tp,lj]=FIXO.split(':');const L=LOJAS.find(x=>x.id===lj);return `<h2>Quem está usando?</h2><p class="help">Digite seu nome. Ele fica registrado nos pedidos.</p>
+  <label class="f">Seu nome<input class="t" id="nomeIn" value="${esc(nome)}" placeholder="Ex.: Ana" autocomplete="name" data-free="1"></label>
+  <div class="roles"><button data-perfil="${FIXO}"><span class="ic">${tp==='loja'?ICON.loja:ICON.central}</span><span><b>${tp==='loja'?'Loja '+L.nome:'Central (produção)'}</b><span class="d">Entrar</span></span></button></div>${sair}`}
+  return sair.replace('class="help mt"','class="help"')+telaPerfil0();
+}
+function telaPerfil0(){
+  return `<h2>Quem está usando?</h2><p class="help">Escolha uma vez. O celular lembra da sua escolha.</p>
+  <label class="f">Seu nome<input class="t" id="nomeIn" value="${esc(nome)}" placeholder="Ex.: Marcela" autocomplete="name" data-free="1"></label>
+  <div class="roles">
+   ${LOJAS.map(l=>`<button data-perfil="loja:${l.id}"><span class="ic">${ICON.loja}</span><span><b>Loja ${l.nome}</b><span class="d">${F2()?'Fazer pedido, receber entrega, validades e perdas':'Fazer pedido e conferir a entrega'}</span></span></button>`).join('')}
+   <button data-perfil="central"><span class="ic">${ICON.central}</span><span><b>Central (produção)</b><span class="d">${F2()?'O que produzir, etiquetas, validades, perdas e inventário':'O que produzir e lançar a produção'}</span></span></button>
+   <button data-perfil="gestor"><span class="ic">${ICON.gestor}</span><span><b>Gestor</b><span class="d">Separar e enviar pedidos, painel das lojas e cadastro</span></span></button>
+  </div>`;
+}
+
+/* ================= LOJA: pedido em 3 passos ================= */
+const passos=n=>`<div class="passos">${['Contar','Revisar','Enviar'].map((t,i)=>`<span class="${i+1<n?'feito':i+1===n?'atual':''}"><b>${i+1}</b>${t}</span>`).join('')}</div>`;
+function vPedido(){
+  const loja=perfil.loja;const ab=aberto(loja);const cam=aCaminho(loja);
+  let topo='';
+  if(cam.length)topo+=`<button class="banner warn bannerbtn" data-goto="receber"><b>Entrega a caminho.</b> Quando chegar, toque aqui para conferir e receber.</button>`;
+  if(ab){const n=Object.keys(ab.itens).length+(ab.extras||[]).length;
+    return topo+`${passos(4)}<h2>Pedido enviado</h2>
+    <div class="card"><div class="flexsp"><b>Pedido ${esc(codPed(ab))}</b>${chipStatus(ab.status)}</div><p class="help" style="margin:8px 0 0">${n} itens · por ${esc(ab.por||'')}. A central vai separar. Quando sair, aparece em <b>Receber</b>.</p>
+    ${tabelaPedido(ab,false)}
+    <div class="mt"><button class="btn sec" data-cancelaped="${ab._id}">Cancelar e corrigir o pedido</button></div></div>`}
+  return topo+((passo[loja]||'contar')==='revisar'?vRevisar(loja):vContar(loja));
+}
+function stContar(loja,p){const it=item(loja,p.id);const m=minLoja(p,loja,modo(loja));const s=sugestao(loja,p);
+  return it.tem==null?`<span class="chip c-mute">Falta contar</span>`:m==null?`<span class="chip c-mute">Sem mínimo cadastrado</span>`:s>0?`<span class="chip c-warn">Sugestão: pedir ${fmt(s)}</span>`:`<span class="chip c-ok">Tem o suficiente</span>`}
+function vContar(loja){
+  const md=modo(loja);
+  return `${passos(1)}<h2>Conte o estoque da loja</h2>
+  <div class="seg" role="group" aria-label="Tipo de dia"><button data-modo="normal" class="${md==='normal'?'on':''}">Dia normal</button><button data-modo="reforcado" class="ref ${md==='reforcado'?'on':''}">Dia reforçado</button></div>
+  <p class="help mt">Digite quanto <b>tem agora na loja</b>. O app compara com o mínimo que o gestor definiu e sugere o pedido. No próximo passo você confere e muda o que quiser.</p>
+  ${byCat(S.produtos,p=>{const it=item(loja,p.id);const m=minLoja(p,loja,md);
+   return `<div class="card row"><div style="min-width:0"><div class="nm">${esc(p.nome)}</div><div class="sub">${esc(p.un)} · mínimo <b class="num">${fmt(m)}</b></div></div>
+   ${stepper('t_'+p.id,it.tem,`data-loja="${loja}" data-pid="${p.id}" data-kind="tem"`)}
+   <div style="grid-column:1/-1" data-st="${p.id}">${stContar(loja,p)}</div></div>`})}`;
+}
+function vRevisar(loja){
+  const its=itensRevisao(loja);const ex=extrasRasc(loja);const c=contados(loja);
+  return `${passos(2)}<h2>Revise seu pedido</h2>
+  <p class="help">Estas são as quantidades que vão para a central. A <b>sugestão</b> é o mínimo menos o que você contou. Mude o número se precisar, ou zere para tirar do pedido.</p>
+  ${c.n<c.tot?`<div class="banner warn">Você contou ${c.n} de ${c.tot} produtos. Produto não contado só entra no pedido se você adicionar.</div>`:''}
+  ${its.length?`<div class="list">${its.map(p=>{const it=item(loja,p.id);const s=sugestao(loja,p);const q=qtdPedido(loja,p);
+   return `<div class="card row ${q>0?'':'apagado'}"><div style="min-width:0"><div class="nm">${esc(p.nome)}</div><div class="sub">${it.tem!=null?`tem ${fmt(it.tem)} · mín. ${fmt(minLoja(p,loja,modo(loja)))} · sugestão <b>${fmt(s??0)}</b>`:'adicionado por você'}${it.ped!=null&&s!=null&&it.ped!==s?' · <b style="color:var(--info)">alterado</b>':''}${q>0?'':' · <b>fora do pedido</b>'}</div></div>${stepper('q_'+p.id,q,`data-loja="${loja}" data-pid="${p.id}" data-kind="ped"`)}</div>`}).join('')}</div>`:vazio('Nenhum item no pedido ainda','Pela contagem, a loja tem o suficiente. Adicione abaixo se precisar de algo.')}
+  ${ex.length?`<h3>Fora da lista</h3><div class="list">${ex.map((x,i)=>`<div class="card row"><div style="min-width:0"><div class="nm">${esc(x.nome)}</div><div class="sub">${fmt(x.qtd)} ${esc(x.un)}${x.obs?' · '+esc(x.obs):''}</div></div><button class="btn sec small" data-tiraextra="${i}">Tirar</button></div>`).join('')}</div>`:''}
+  <div class="grid2 mt"><button class="btn sec" data-addprod="1">+ Produto da lista</button><button class="btn sec" data-addextra="1">+ Item fora da lista</button></div>`;
+}
+function rodapePedido(){
+  const loja=perfil.loja;if(aberto(loja)){$('#sum').hidden=true;return}
+  const ps=passo[loja]||'contar';$('#sum').hidden=false;
+  if(ps==='contar'){const c=contados(loja);const n=itensRevisao(loja).filter(p=>qtdPedido(loja,p)>0).length;
+    $('#sumIn').innerHTML=`<div class="t">Contados <b class="num">${c.n}/${c.tot}</b> · Sugestão <b class="num">${n}</b> itens</div><button class="btn small" data-passo="revisar">Revisar pedido →</button>`;
+    (S.produtos||[]).forEach(p=>{const el=document.querySelector(`[data-st="${p.id}"]`);if(el)el.innerHTML=stContar(loja,p)});
+  }else{const n=itensRevisao(loja).filter(p=>qtdPedido(loja,p)>0).length+extrasRasc(loja).length;
+    $('#sumIn').innerHTML=`<button class="btn sec small" data-passo="contar">← Contagem</button><div class="t" style="text-align:right"><b class="num">${n}</b> itens</div><button class="btn small" id="enviaPed" ${n&&!S.ro?'':'disabled'}>Enviar pedido</button>`}
+}
+async function enviarPedido(){
+  const loja=perfil.loja;await flush(loja);if(aberto(loja)){toast('Já existe um pedido aguardando a central.');return}
+  const its=itensRevisao(loja).filter(p=>qtdPedido(loja,p)>0);const ex=extrasRasc(loja);
+  if(!its.length&&!ex.length){toast('O pedido está vazio.');return}
+  const ok=await confirmar('Enviar pedido para a central?',`<table class="mini"><tr><th>Produto</th><th class="n">Qtd</th></tr>${its.map(p=>`<tr><td>${esc(p.nome)}</td><td class="n">${fmt(qtdPedido(loja,p))} ${esc(p.un)}</td></tr>`).join('')}${ex.map(x=>`<tr><td>${esc(x.nome)} <span class="chip c-info">fora da lista</span></td><td class="n">${fmt(x.qtd)} ${esc(x.un)}</td></tr>`).join('')}</table>`,'Enviar pedido');
+  if(!ok)return;
+  try{
+    const r=rasc(loja);const itens={};const contagem={};
+    for(const p of S.produtos){const it=item(loja,p.id);if(it.tem!=null)contagem[p.id]=it.tem;const q=qtdPedido(loja,p);if(q>0)itens[p.id]={tem:it.tem??null,min:minLoja(p,loja,modo(loja)),sug:sugestao(loja,p),ped:q}}
+    const id=hoje()+'_'+agora().replace(':','')+'_'+loja+'_'+uid().slice(-3);
+    await put('pedidos/'+id,{loja,data:hoje(),hora:agora(),por:nome,modo:modo(loja),status:'enviado',itens,extras:ex.map(x=>Object.assign({},x)),contagem});
+    // consumo = última contagem + o que recebeu depois − contagem de agora
+    const saldo=Object.assign({},r.saldo||{}),receb=Object.assign({},r.receb||{}),consumo={};
+    for(const [pid,tem] of Object.entries(contagem)){if(saldo[pid]!=null){const c=r2(saldo[pid]+(receb[pid]||0)-tem);if(c>0)consumo[pid]=c}saldo[pid]=tem;receb[pid]=0;
+      if(F2()){const tot=estoque(loja,pid).tot;if(tot>tem)await baixar(loja,pid,r2(tot-tem))}}
+    if(Object.keys(consumo).length){const ja=((S.cons.d||{})[hoje()]||{})[loja]||{};const soma={};for(const k in consumo)soma[k]=r2((ja[k]||0)+consumo[k]);await upsert('consumo/'+mes(),{d:{[hoje()]:{[loja]:soma}}})}
+    pend[loja]={};await put('contagens/'+loja,{modo:modo(loja),itens:{},extras:[],saldo,receb,saldoData:hoje()});
+    passo[loja]='contar';LS.set('passo',passo);window.scrollTo(0,0);toast('Pedido enviado para a central.');
+  }catch(e){falhou(e)}
+}
+async function cancelarPedido(id){
+  const pd=S.pedidos.find(x=>x._id===id);if(!pd||pd.status!=='enviado'){toast('A central já separou este pedido. Não dá mais para cancelar.');return}
+  if(!(await confirmar('Cancelar o pedido?','<p class="help">O pedido volta para revisão com as mesmas quantidades, para você corrigir e enviar de novo.</p>','Cancelar pedido',true)))return;
+  try{const itens={};for(const [pid,t] of Object.entries(pd.contagem||{}))itens[pid]={tem:t,ped:0}; /* contado e fora do pedido continua fora */ for(const [pid,i] of Object.entries(pd.itens))itens[pid]=Object.assign(itens[pid]||{},{tem:i.tem,ped:i.ped});
+    await upsert('pedidos/'+id,{status:'cancelado'});await upsert('contagens/'+pd.loja,{itens,extras:pd.extras||[]});passo[pd.loja]='revisar';LS.set('passo',passo);toast('Pedido cancelado. Corrija e envie de novo.')}catch(e){falhou(e)}
+}
+function tabelaPedido(pd,completo){
+  const env=pd.envio||{},rec=pd.receb||{};
+  const linhas=Object.entries(pd.itens).map(([pid,i])=>{const e=(env.itens||{})[pid];const r=(rec.itens||{})[pid];const dv=r&&e&&r.rec!==e.env;const vm=r&&(r.dts||[]).some(x=>x.vC&&x.vL&&x.vC!==x.vL);
+    return `<tr><td>${esc(nomeP(pid))}${vm?`<div class="sub" style="color:var(--bad)">validade diferente: central ${(r.dts||[]).map(x=>br(x.vC)).join(', ')} · etiqueta ${(r.dts||[]).map(x=>br(x.vL)).join(', ')}</div>`:''}${completo&&r&&!vm&&(r.dts||[]).some(x=>x.vL||x.vC)?`<div class="sub">validade ${(r.dts||[]).map(x=>br(x.vL||x.vC)).join(', ')}</div>`:''}</td><td class="n">${fmt(i.ped)}</td><td class="n">${e?fmt(e.env):'—'}</td><td class="n" style="${dv?'color:var(--warn);font-weight:700':''}">${r?fmt(r.rec):'—'}</td></tr>`}).join('');
+  const ex=(pd.extras||[]).map((x,k)=>{const e=((env.extras||[])[k]||{});const r=(rec.extras||{})[k];return `<tr><td>${esc(x.nome)} <span class="chip c-info">fora da lista</span>${x.obs?`<div class="sub">${esc(x.obs)}</div>`:''}</td><td class="n">${fmt(x.qtd)}</td><td class="n">${e.env!=null?fmt(e.env):'—'}</td><td class="n">${r!=null?fmt(r):'—'}</td></tr>`}).join('');
+  return `<div style="overflow-x:auto"><table class="mini"><tr><th>Produto</th><th class="n">Pediu</th><th class="n">Enviou</th><th class="n">Chegou</th></tr>${linhas}${ex}</table></div>`;
+}
+function cardPedido(pd,mostraLoja){const n=Object.keys(pd.itens).length+(pd.extras||[]).length;const dv=pd.receb&&Object.keys(pd.receb.diverg||{}).length;const vm=pd.receb&&Object.values(pd.receb.itens||{}).some(r=>(r.dts||[]).some(x=>x.vC&&x.vL&&x.vC!==x.vL));
+  return `<details class="card"><summary><span>${mostraLoja?'<b>'+esc(nomeLocal(pd.loja))+'</b> · ':''}${br(pd.data)} ${esc(pd.hora)} · ${n} itens</span><span>${dv?'<span class="chip c-warn">diferença</span> ':''}${vm?'<span class="chip c-bad">validade</span> ':''}${chipStatus(pd.status)}</span></summary>
+  <p class="help mt" style="margin-bottom:0">Pedido por ${esc(pd.por||'—')}${pd.modo==='reforcado'?' · dia reforçado':''}${pd.envio?` · saiu ${br(pd.envio.data)} ${esc(pd.envio.hora)} (${esc(pd.envio.por||'')})`:''}${pd.receb?` · recebido ${br(pd.receb.data)} ${esc(pd.receb.hora)} (${esc(pd.receb.por||'')})`:''}</p>${tabelaPedido(pd,true)}</details>`}
+function vLHist(){
+  const ps=pedidosDe(perfil.loja).filter(x=>x.status!=='cancelado');
+  return `<h2>Meus pedidos</h2><p class="help">Últimos 30 dias. Toque num pedido para ver o que a loja pediu, o que a central enviou e o que chegou.</p>`+(ps.length?`<div class="list">${ps.map(pd=>cardPedido(pd)).join('')}</div>`:vazio('Nenhum pedido ainda','Os pedidos enviados aparecem aqui.'));
+}
+
+/* ================= LOJA: receber (validade obrigatória para produção própria) ================= */
+const recQ={};
+function porcoes(pd,pid){const e=pd.envio.itens[pid];const por=(e.lotes||[]).map(x=>Object.assign({},x));const com=r2(por.reduce((s,x)=>s+x.q,0));if(e.env>com)por.push({c:'',v:null,d:null,q:r2(e.env-com)});return por}
+const chipVal=(vl,x)=>vl&&x&&x.v&&vl!==x.v?`<span class="chip c-bad wrap">Diferente do registro da central (${br(x.v)}). Confira a etiqueta.</span>`:vl?'<span class="chip c-ok">Validade anotada</span>':'';
+function vReceber(){
+  const loja=perfil.loja;const ps=aCaminho(loja);
+  if(!ps.length)return `<h2>Receber entrega</h2><p class="help">Quando a central enviar seu pedido, ele aparece aqui para você conferir.</p>`+vazio('Nenhuma entrega a caminho','Tudo o que chegou já foi conferido.');
+  return `<h2>Receber entrega</h2><p class="help">Confira cada item. Se chegou outra quantidade, troque o número.${F2()?' Nos itens de <b>produção própria</b>, olhe a etiqueta e digite a <b>validade</b>.':''}</p>`+ps.map(pd=>{const its=Object.entries(pd.envio.itens).filter(([,e])=>e.env>0);const q=recQ[pd._id]=recQ[pd._id]||{};
+   return `<div class="card"><div class="flexsp"><b>Pedido ${esc(codPed(pd))}</b><span class="chip c-info">saiu ${br(pd.envio.data)} ${esc(pd.envio.hora)}</span></div></div>
+   <div class="list mt">${its.map(([pid,e])=>{const pr=F2()&&propria(P(pid));const rq=q[pid]||{};const por=porcoes(pd,pid);
+    return `<div class="card form"><div class="row"><div style="min-width:0"><div class="nm">${esc(nomeP(pid))}</div><div class="sub">saiu <b class="num">${fmt(e.env)}</b> ${esc(unP(pid))}${pr?' · <b>produção própria</b>':''}</div></div>${stepper('r_'+pd._id+'_'+pid,rq.q??e.env,`data-kind="rec" data-e="${pd._id}" data-pid="${pid}"`)}</div>
+    ${pr?por.map((x,k)=>{const vl=(rq.dts||[])[k];return `<label class="f" style="font-weight:700">Validade na etiqueta${por.length>1?` (${fmt(x.q)} ${esc(unP(pid))})`:''}<input class="t" type="date" id="v_${pd._id}_${pid}_${k}" data-recv="${pd._id}|${pid}|${k}" value="${vl||''}"></label><span data-recd="${pd._id}|${pid}|${k}">${chipVal(vl,x)}</span>`}).join(''):''}</div>`}).join('')}
+    ${(pd.extras||[]).map((x,k)=>{const e=(pd.envio.extras||[])[k]||{};if(!(e.env>0))return'';const rq=q['x'+k]||{};return `<div class="card row"><div style="min-width:0"><div class="nm">${esc(x.nome)}</div><div class="sub">fora da lista · saiu ${fmt(e.env)} ${esc(x.un)}</div></div>${stepper('rx_'+pd._id+'_'+k,rq.q??e.env,`data-kind="rec" data-e="${pd._id}" data-pid="x${k}"`)}</div>`}).join('')}</div>
+   <div class="mt"><button class="btn" data-receber="${pd._id}" ${S.ro?'disabled':''}>Confirmar recebimento</button></div>`}).join('<div class="mt"></div>');
+}
+async function receber(eid){
+  const loja=perfil.loja;const pd=S.pedidos.find(x=>x._id===eid);if(!pd)return;const q=recQ[eid]||{};
+  const its=Object.entries(pd.envio.itens).filter(([,e])=>e.env>0);
+  for(const [pid,e] of its){if(!F2()||!propria(P(pid))||((q[pid]||{}).q??e.env)===0)continue; // não chegou = não precisa validade
+   const por=porcoes(pd,pid);const dts=(q[pid]||{}).dts||[];const k=por.findIndex((x,i)=>!dts[i]);if(k>=0){toast('Falta a validade da etiqueta: '+nomeP(pid)+'.');const el=document.getElementById(`v_${eid}_${pid}_${k}`);if(el){el.scrollIntoView({block:'center'});el.classList.add('erro')}return}}
+  const dif=its.map(([pid,e])=>({pid,env:e.env,rec:(q[pid]||{}).q??e.env})).filter(x=>x.rec!==x.env);
+  if(dif.length&&!(await confirmar('Chegou diferente',`<p class="help">Estes itens vão ficar registrados com diferença para o gestor:</p><table class="mini"><tr><th>Produto</th><th class="n">Saiu</th><th class="n">Chegou</th></tr>${dif.map(x=>`<tr><td>${esc(nomeP(x.pid))}</td><td class="n">${fmt(x.env)}</td><td class="n">${fmt(x.rec)}</td></tr>`).join('')}</table>`,'Confirmar')))return;
+  try{
+    const rItens={},diverg={};const receb=Object.assign({},rasc(loja).receb||{});
+    for(const [pid,e] of its){
+      const rec=(q[pid]||{}).q??e.env;if(rec!==e.env)diverg[pid]={env:e.env,rec};
+      const pr=F2()&&propria(P(pid));const por=porcoes(pd,pid);const dts=(q[pid]||{}).dts||[];
+      por.forEach((x,k)=>{x.vL=pr?dts[k]:null});
+      let resto=rec;const entra=[];
+      for(const x of por){if(resto<=0)break;const t=r2(Math.min(x.q,resto));resto=r2(resto-t);entra.push(Object.assign({},x,{q:t}))}
+      if(resto>0){if(entra.length)entra[entra.length-1].q=r2(entra[entra.length-1].q+resto);else entra.push({c:'',v:null,d:null,vL:null,q:resto})}
+      if(F2())for(const x of entra)if(x.q>0)await put('lotesLoja/'+uid(),{loja,p:pid,codigo:x.c,vence:x.vL||x.v||null,venceCentral:x.v||null,data:x.d,qtd:x.q,resta:x.q,receb:hoje(),pedido:eid});
+      rItens[pid]={rec,dts:por.map(x=>({q:x.q,vC:x.v||null,vL:x.vL||null}))};receb[pid]=r2((receb[pid]||0)+rec);
+    }
+    const rEx={};(pd.extras||[]).forEach((x,k)=>{const e=(pd.envio.extras||[])[k]||{};if(e.env>0)rEx[k]=(q['x'+k]||{}).q??e.env});
+    await upsert('pedidos/'+eid,{status:'recebido',receb:{data:hoje(),hora:agora(),por:nome,itens:rItens,extras:rEx,diverg}});
+    await upsert('contagens/'+loja,{receb});
+    delete recQ[eid];toast('Entrega recebida. Validades registradas.');
+  }catch(err){falhou(err)}
+}
+
+/* ================= validades e perdas (central e lojas) ================= */
+function vValid(local){
+  const h=hoje();const ls=lotesDe(local).filter(l=>l.vence).sort((a,b)=>a.vence<b.vence?-1:1);
+  const v=ls.filter(l=>l.vence<h).length,lg=ls.filter(l=>l.vence>=h&&dias(h,l.vence)<=2).length;
+  return `<h2>Validades</h2><p class="help">O que vence primeiro está no topo: use${local==='central'?' e envie':''} primeiro. Vencido = jogue fora e toque em Descartar.</p>
+  <div class="kpis"><div class="kpi"><div class="v" style="color:var(--bad)">${v}</div><div class="l">vencidos</div></div><div class="kpi"><div class="v" style="color:var(--warn)">${lg}</div><div class="l">vencem em até 2 dias</div></div><div class="kpi"><div class="v">${ls.length}</div><div class="l">lotes ${local==='central'?'na central':'na loja'}</div></div></div>
+  ${ls.length?`<div class="list mt">${ls.map(l=>{const d=dias(h,l.vence);
+   return `<div class="card lot ${stripe(l.vence)}"><div class="d">${br(l.vence)}<small>vence</small></div><div style="min-width:0"><div class="nm">${esc(nomeP(l.p))}</div><div class="sub">${fmt(l.resta)} ${esc(unP(l.p))}${l.codigo?` · <span class="code">${esc(l.codigo)}</span>`:''}${l.data?' · feito '+br(l.data):''}${l.receb?' · chegou '+br(l.receb):''}</div>${chipVence(l.vence)}</div>
+   <div style="display:flex;flex-direction:column;gap:6px">${d<0?`<button class="btn bad small" data-desc="${l.id}" data-local="${local}">Descartar</button>`:''}${local==='central'?`<button class="btn sec small" data-etq="${l.id}">Etiqueta</button>`:''}</div></div>`}).join('')}</div>`:`<div class="mt">${vazio('Nenhum lote com validade',local==='central'?'Os lotes aparecem aqui quando a produção é lançada.':'Os lotes aparecem aqui quando a loja recebe a entrega.')}</div>`}`;
+}
+let fPer={p:'',q:null,m:''};
+function vPerdas(local){
+  const regs=perdasRegs().filter(r=>(r.local||'central')===local&&r.data.startsWith(mes())).sort((a,b)=>a.data<b.data?1:-1).slice(0,15);
+  const p=P(fPer.p);const e=p?estoque(local,p.id):null;
+  return `<h2>Lançar perda</h2><p class="help">Tudo que foi para o lixo. A perda sai do estoque ${local==='central'?'da central':'da loja'}.</p>
+  <div class="card form">
+   <label class="f">Produto${prodSelect('pe_p',fPer.p)}</label>
+   ${e?`<span class="sub">${local==='central'?'Central':'Loja'} tem ${fmt(e.tot)} ${esc(p.un)} no sistema</span>`:''}
+   <div class="row"><b>Quantidade</b>${stepper('pe_q',fPer.q,'data-kind="peq"')}</div>
+   <div><b>Motivo</b><div class="chips mt">${MOTIVOS.map(m=>`<button type="button" data-mot="${esc(m)}" class="${fPer.m===m?'on':''}">${esc(m)}</button>`).join('')}</div></div>
+   <button class="btn bad" id="salvaPerda" data-local="${local}" ${S.ro?'disabled':''}>Lançar perda</button>
+  </div>
+  <h3>Últimas perdas do mês</h3>
+  ${regs.length?`<div class="card"><table class="mini">${regs.map(r=>`<tr><td>${br(r.data)}</td><td>${esc(nomeP(r.p))}<div class="sub">${esc(r.motivo)}${r.quem?' · '+esc(r.quem):''}</div></td><td class="n">${fmt(r.qtd)} ${esc(unP(r.p))}</td></tr>`).join('')}</table></div>`:vazio('Nenhuma perda neste mês')}`;
+}
+async function salvarPerda(local){
+  const p=P($('#pe_p').value);const q=num($('#pe_q').value);
+  if(!p){toast('Escolha o produto.');return}if(!q){toast('Digite a quantidade.');return}if(!fPer.m){toast('Escolha o motivo.');return}
+  const tem=estoque(local,p.id).tot;
+  if(q>tem&&!(await confirmar('Perda maior que o estoque',`<p class="help">O sistema diz que tem <b>${fmt(tem)} ${esc(p.un)}</b> de ${esc(p.nome)}, e você quer lançar <b>${fmt(q)}</b>. ${local==='central'?'Pode ter faltado lançar alguma produção.':'Pode ter faltado receber alguma entrega.'} Lançar mesmo assim?</p>`,'Lançar assim')))return;
+  try{await registrarPerda(local,p.id,q,fPer.m,nome);fPer={p:'',q:null,m:''};document.activeElement.blur();toast('Perda lançada.');render()}catch(e){falhou(e)}
+}
+
+/* ================= CENTRAL: o que produzir (de onde vem cada número) ================= */
+function vProduzir(){
+  const lista=S.produtos.filter(p=>necessidade(p).produzir>0);
+  const abs=abertos();const extras=abs.flatMap(pd=>(pd.extras||[]).map(x=>Object.assign({loja:pd.loja},x)));
+  const feitos={};S.prod.filter(l=>l.data===hoje()&&l.origem==='Produção').forEach(l=>feitos[l.p]=r2((feitos[l.p]||0)+l.qtd));
+  return `<h2>O que produzir</h2>
+  <div class="card"><b>De onde vem esta lista?</b><p class="help" style="margin:6px 0 0">Dos <b>pedidos que as lojas enviaram</b> e ainda não saíram da central${F2()&&S.produtos.some(p=>p.minC!=null)?', mais o <b>estoque mínimo da central</b> que o gestor cadastrou':''}. ${F2()?'O app desconta o que já está pronto na central.':'O app desconta o que a central já lançou como produzido hoje.'}</p>
+  <div class="chips mt">${LOJAS.map(L=>{const a=aberto(L.id);return `<span class="chip ${a?'c-ok':'c-mute'}">${L.nome}: ${a?'pedido das '+esc(a.hora):'sem pedido'}</span>`}).join('')}</div></div>
+  ${lista.length?byCat(lista,p=>{const n=necessidade(p);
+   return `<div class="card"><div class="row"><div style="min-width:0"><div class="nm">${esc(p.nome)}</div><div class="sub">${Object.entries(n.por).map(([l,q])=>`${esc(nomeLocal(l))} pediu <b>${fmt(q)}</b>`).join(' · ')||'para o estoque mínimo da central'}</div></div><div style="text-align:right"><div class="big" style="color:var(--warn)">${fmt(n.produzir)}</div><div class="sub">${esc(p.un)}</div></div></div>
+   <table class="mini"><tr><td>Total pedido pelas lojas</td><td class="n">${fmt(n.tot)}</td></tr><tr><td>${F2()?'Já pronto na central':'Já produzido hoje'}</td><td class="n">− ${fmt(Math.min(n.bom,n.tot))}</td></tr>${n.repor?`<tr><td>Repor mínimo da central (${fmt(p.minC)})</td><td class="n">+ ${fmt(n.repor)}</td></tr>`:''}<tr><td><b>Produzir</b></td><td class="n"><b>${fmt(n.produzir)}</b></td></tr></table>
+   ${F2()&&feitos[p.id]?`<p class="help mt" style="margin-bottom:0;color:var(--ok)"><b>Já lançado hoje: ${fmt(feitos[p.id])}</b></p>`:''}
+   <div class="mt"><button class="btn sec small" data-lancar="${p.id}" data-q="${n.produzir}">Lançar produção</button></div></div>`}):`<div class="mt">${vazio(abs.length?'Nada para produzir':'Nenhum pedido das lojas ainda',abs.length?(F2()?'A central já tem pronto o que as lojas pediram.':'Tudo o que as lojas pediram já foi lançado como produzido hoje.'):'A lista aparece quando as lojas enviarem os pedidos do dia.')}</div>`}
+  ${extras.length?`<h3>Itens fora da lista pedidos</h3><div class="card"><table class="mini">${extras.map(x=>`<tr><td>${esc(x.nome)}<div class="sub">${esc(nomeLocal(x.loja))}${x.obs?' · '+esc(x.obs):''}</div></td><td class="n">${fmt(x.qtd)} ${esc(x.un)}</td></tr>`).join('')}</table></div>`:''}
+  ${Object.keys(feitos).length?`<h3>Feito hoje</h3><div class="card"><table class="mini">${Object.entries(feitos).map(([pid,q])=>`<tr><td>✓ ${esc(nomeP(pid))}</td><td class="n">${fmt(q)} ${esc(unP(pid))}</td></tr>`).join('')}</table></div>`:''}`;
+}
+
+/* ================= CENTRAL: produção + etiquetas ================= */
+let fProd=LS.get('fprod',{p:'',q:null,data:null});
+function vProducao(){
+  const p=P(fProd.p);const dt=fProd.data||hoje();const vence=p&&p.val!=null?addDias(dt,p.val):null;
+  const d7=[];for(let i=0;i<7;i++)d7.push(addDias(hoje(),-i));
+  const porDia=d7.map(d=>({d,ls:S.prod.filter(l=>l.data===d&&l.origem==='Produção').sort((a,b)=>(b.criado||'')<(a.criado||'')?-1:1)})).filter(x=>x.ls.length);
+  return `<h2>Registrar produção</h2><p class="help">Terminou uma produção? Lance aqui${F2()?'. O app calcula o vencimento e mostra o que escrever na etiqueta.':': o que foi feito, quanto e quem fez.'}</p>
+  <div class="card form">
+   <label class="f">Produto${prodSelect('pr_p',fProd.p)}</label>
+   <div class="row"><b>Quantidade ${p?'('+esc(p.un)+')':''}</b>${stepper('pr_q',fProd.q,'data-kind="prq"')}</div>
+   <label class="f">Data da produção<input class="t" type="date" id="pr_d" value="${dt}" max="${hoje()}"></label>
+   <div>${p&&F2()?(vence?`<span class="chip c-info">Vence em ${brAno(vence)}</span> `:`<span class="chip c-mute">Sem controle de validade</span> `)+`<span class="chip c-mute">${esc(p.cons||CONS[0])}</span>`:''}</div>
+   <button class="btn" id="salvaProd" ${S.ro?'disabled':''}>Salvar produção</button>
+  </div>
+  <h3>Produção dos últimos 7 dias</h3>
+  ${porDia.length?porDia.map(x=>`<p class="help" style="margin:10px 0 6px"><b>${x.d===hoje()?'Hoje':brAno(x.d)}</b></p><div class="list">${x.ls.map(l=>`<div class="card row"><div style="min-width:0"><div class="nm">${esc(nomeP(l.p))}</div><div class="sub">${fmt(l.qtd)} ${esc(unP(l.p))} ${F2()?` · <span class="code">${esc(l.codigo||'—')}</span>`:''} · ${esc(l.quem||'')}${F2()&&l.vence?' · vence '+br(l.vence):''}</div></div><div style="display:flex;flex-direction:column;gap:6px">${F2()?`<button class="btn sec small" data-etq="${l.id}">Etiqueta</button>`:''}${l.data===hoje()&&(l.resta===l.qtd||!F2())?`<button class="btn sec small" data-desfaz="${l.id}">Desfazer</button>`:''}</div></div>`).join('')}</div>`).join(''):vazio('Nada lançado nos últimos 7 dias','Cada produção pronta vira uma linha aqui.')}`;
+}
+async function salvarProducao(){
+  const p=P($('#pr_p').value);const q=num($('#pr_q').value);const dt=$('#pr_d').value||hoje();
+  if(!p){toast('Escolha o produto.');return}if(!q){toast('Digite a quantidade.');return}if(dt>hoje()){toast('A data não pode ser no futuro.');return}
+  const id=uid();const l={p:p.id,qtd:q,resta:q,data:dt,vence:p.val!=null?addDias(dt,p.val):null,quem:nome,origem:'Produção',codigo:codigoLote(dt),criado:new Date().toISOString()};
+  if(!F2()){l.vence=null;l.resta=0} // etapa 1: só registra a produção, sem estoque
+  try{await put('lotes/'+id,l);fProd={p:'',q:null,data:null};LS.set('fprod',fProd);document.activeElement.blur();render();if(F2())abrirEtiqueta(Object.assign({id},l),true);else toast(fmt(q)+' '+p.un+' de '+p.nome+' lançado.')}catch(e){falhou(e)}
+}
+function etqHTML(l){const p=P(l.p)||{nome:l.p,un:''};
+  return `<div class="etq"><div class="en">${esc(p.nome)}</div><div>Lote: <b>${esc(l.codigo||'—')}</b></div><div>Fabricação: <b>${brAno(l.data)}</b></div><div class="ev">Validade: ${l.vence?brAno(l.vence):'—'}</div><div>${esc(p.cons||CONS[0])}</div><div>Resp.: ${esc(l.quem||'')}</div></div>`}
+function abrirEtiqueta(l,nova){
+  sheet(`<h2>${nova?'Produção salva':'Etiqueta'}</h2><p class="help" style="margin:0">${nova?'Agora escreva na etiqueta de <b>cada pote ou embalagem</b>:':'O que deve estar escrito na etiqueta:'}</p>${etqHTML(l)}<button class="btn" data-fechar="1">${nova?'Pronto, etiquetei':'Fechar'}</button>`,(e,close)=>{const b=e.target.closest('button');if(b&&b.dataset.fechar)close()});
+}
+
+/* ================= CENTRAL: inventário ================= */
+let inv=LS.get('inv',{}),invDt=LS.get('invdt',{});
+const chipInv=d=>d==null?'':d===0?'<span class="chip c-ok">Bate</span>':d>0?`<span class="chip c-info">Entra ${fmt(d)}</span>`:`<span class="chip c-bad">Sai ${fmt(-d)} (perda)</span>`;
+function vInv(){
+  const n=Object.values(inv).filter(v=>v!=null).length;
+  return `<h2>Inventário</h2><p class="help">Conte o que existe na central e digite. Produto não contado: deixe vazio. Depois toque em Lançar inventário.</p>
+  ${byCat(S.produtos,p=>{const e=estoque('central',p.id);const c=inv[p.id];const d=c==null?null:r2(c-e.tot);
+   return `<div class="card row"><div style="min-width:0"><div class="nm">${esc(p.nome)}</div><div class="sub">${esc(p.un)} · sistema diz <b class="num">${fmt(e.tot)}</b></div><span data-invd="${p.id}">${chipInv(d)}</span></div>${stepper('i_'+p.id,c,`data-kind="inv" data-pid="${p.id}"`)}
+   ${p.val!=null?`<label class="f" style="grid-column:1/-1;font-weight:400" data-invdtw="${p.id}" ${d>0?'':'hidden'}>O que sobrou foi produzido em (para calcular a validade)<input class="t" type="date" id="idt_${p.id}" data-invdt="${p.id}" value="${invDt[p.id]||hoje()}" max="${hoje()}"></label>`:''}</div>`})}
+  <div class="mt"><button class="btn" id="lancaInv" ${n&&!S.ro?'':'disabled'}>Lançar inventário (${n} contados)</button></div>`;
+}
+async function lancarInv(){
+  const dif=Object.entries(inv).filter(([,v])=>v!=null).map(([pid,c])=>{const p=P(pid);return p&&{p,c,s:estoque('central',pid).tot}}).filter(Boolean).map(x=>Object.assign(x,{d:r2(x.c-x.s)}));
+  if(!(await confirmar('Lançar inventário?',`<p class="help">Sobrou mais que o sistema: entra como lote “Inventário”. Faltou: sai como perda “Ajuste de contagem”.</p><table class="mini"><tr><th>Produto</th><th class="n">Sistema</th><th class="n">Contado</th></tr>${dif.map(x=>`<tr><td>${esc(x.p.nome)}</td><td class="n">${fmt(x.s)}</td><td class="n">${fmt(x.c)}</td></tr>`).join('')}</table>`,'Lançar')))return;
+  try{const reg={};
+    for(const x of dif){reg[x.p.id]={sis:x.s,cont:x.c};
+      if(x.d>0){const dt=invDt[x.p.id]||hoje();await put('lotes/'+uid(),{p:x.p.id,qtd:x.d,resta:x.d,data:dt,vence:x.p.val!=null?addDias(dt,x.p.val):null,quem:nome,origem:'Inventário',codigo:codigoLote(dt),criado:new Date().toISOString()})}
+      else if(x.d<0)await registrarPerda('central',x.p.id,-x.d,'Ajuste de contagem',nome)}
+    await put('inventarios/'+hoje()+'_'+agora().replace(':','')+'_'+uid().slice(-3),{data:hoje(),quem:nome,itens:reg});
+    inv={};invDt={};LS.set('inv',inv);LS.set('invdt',invDt);toast('Inventário lançado.');render();
+  }catch(e){falhou(e)}
+}
+
+/* ================= GESTOR: pedidos e separação ================= */
+function vSep(){
+  const abs=abertos();
+  const status=LOJAS.map(L=>{const a=aberto(L.id);const cam=aCaminho(L.id).length;return `<div class="kpi"><div class="l"><b>${L.nome}</b></div><div class="v">${a?Object.keys(a.itens).length+(a.extras||[]).length:'—'}</div><div class="l">${a?`<span class="chip c-warn">pediu ${esc(a.hora)}</span>`:'sem pedido aberto'}${cam?'<br><span class="chip c-info">a caminho</span>':''}</div></div>`}).join('');
+  const pids=[...new Set(abs.flatMap(pd=>Object.keys(pd.itens)))];const ps=S.produtos.filter(p=>pids.includes(p.id));
+  return `<h2>Pedidos para separar</h2><p class="help">Pedidos que as lojas enviaram. O número de cada loja é o que vai sair; troque se quiser mandar outra quantidade.</p>
+  <div class="kpis">${status}</div>
+  ${ps.length?byCat(ps,p=>{const n=necessidade(p);const falta=r2(n.tot-n.bom);const prox=fifo(lotesDe('central',p.id).filter(l=>!l.vence||l.vence>=hoje()))[0];
+    return `<div class="card ${falta>0?'stripe-bad':'stripe-ok'}"><div class="row"><div style="min-width:0"><div class="nm">${esc(p.nome)}</div><div class="sub">${esc(p.un)}${F2()?` · central tem <b class="num">${fmt(n.bom)}</b>`:` · produzido hoje <b class="num">${fmt(n.bom)}</b>`}${F2()&&prox&&prox.codigo?` · pegar <span class="code">${esc(prox.codigo)}</span> (vence ${br(prox.vence)})`:''}</div></div><div style="text-align:right"><div class="big">${fmt(n.tot)}</div><div class="sub">separar</div></div></div>
+    <div class="sep-grid">${LOJAS.map(L=>{const a=aberto(L.id);const i=a&&a.itens[p.id];if(!i)return `<div class="sep-cell" style="opacity:.45"><span class="l">${L.nome}</span><span class="sub">—</span></div>`;return `<div class="sep-cell"><span class="l">${L.nome}</span><span class="sub">pediu ${fmt(i.ped)}</span><input inputmode="decimal" autocomplete="off" id="e_${L.id}_${p.id}" data-env="${a._id}" data-pid="${p.id}" class="${i.env!=null?'alt':''}" value="${fmt(qEnv(a,p.id))}" aria-label="Enviar ${L.nome}"></div>`}).join('')}</div>
+    ${falta>0?`<div class="mt"><span class="chip ${F2()?'c-bad':'c-warn'}">${F2()?'FALTA '+fmt(falta)+' – produzir':'Ainda falta produzir '+fmt(falta)}</span></div>`:''}</div>`}):''}
+  ${abs.some(pd=>(pd.extras||[]).length)?`<h3>Fora da lista</h3><div class="list">${abs.flatMap(pd=>(pd.extras||[]).map((x,k)=>`<div class="card row"><div style="min-width:0"><div class="nm">${esc(x.nome)}</div><div class="sub">${esc(nomeLocal(pd.loja))} pediu ${fmt(x.qtd)} ${esc(x.un)}${x.obs?' · '+esc(x.obs):''}</div></div><div class="sep-cell" style="border:0;padding:0"><span class="l">enviar</span><input inputmode="decimal" autocomplete="off" id="x_${pd._id}_${k}" data-envx="${pd._id}|${k}" value="${fmt(qExtra(x))}" aria-label="Enviar"></div></div>`)).join('')}</div>`:''}
+  ${!abs.length?`<div class="mt">${vazio('Nenhum pedido aberto','Quando as lojas enviarem os pedidos, eles aparecem aqui.')}</div>`:''}`;
+}
+function rodapeSep(){const n=abertos().length;$('#sum').hidden=false;$('#sumIn').innerHTML=`<div class="t">Pedidos abertos <b class="num">${n}</b></div><button class="btn small" id="despachar" ${n&&!S.ro?'':'disabled'}>Registrar envio</button>`}
+async function despachar(){
+  const abs=abertos();if(!abs.length)return;
+  const pids=[...new Set(abs.flatMap(pd=>Object.keys(pd.itens)))];
+  const ok=await confirmar('Registrar envio?',`<p class="help">Tira do estoque da central (pelo lote que vence antes) e manda os pedidos para as lojas conferirem em <b>Receber</b>.</p><div style="overflow-x:auto"><table class="mini"><tr><th>Produto</th>${LOJAS.map(L=>`<th class="n">${L.nome}</th>`).join('')}</tr>${pids.map(pid=>`<tr><td>${esc(nomeP(pid))}</td>${LOJAS.map(L=>{const a=aberto(L.id);return `<td class="n">${a&&a.itens[pid]?fmt(qEnv(a,pid)):''}</td>`}).join('')}</tr>`).join('')}</table></div>`,'Registrar envio');
+  if(!ok)return;
+  let lease;try{lease=await db.doc('travas/envio').acquire({holder:uid(),ttlMs:60000})}catch(e){lease={acquired:true}}
+  if(!lease.acquired){toast('Outro envio está sendo registrado agora. Aguarde um minuto.');return}
+  try{
+    const envios={};abs.forEach(pd=>envios[pd._id]={data:hoje(),hora:agora(),por:nome,itens:{},extras:(pd.extras||[]).map(x=>({env:qExtra(x)}))});
+    for(const pid of pids){
+      const tot=r2(abs.reduce((s,pd)=>s+(pd.itens[pid]?qEnv(pd,pid):0),0));
+      const {tiradas}=tot>0&&F2()?await baixar('central',pid,tot,{soBons:true}):{tiradas:[]};const fila=tiradas.map(x=>Object.assign({},x));
+      for(const pd of abs){if(!pd.itens[pid])continue;let q=qEnv(pd,pid);const ls=[];while(q>0&&fila.length){const x=fila[0];const t=r2(Math.min(x.q,q));ls.push(Object.assign({},x,{q:t}));x.q=r2(x.q-t);q=r2(q-t);if(x.q<=0)fila.shift()}envios[pd._id].itens[pid]={env:qEnv(pd,pid),lotes:ls}}
+    }
+    for(const pd of abs)await upsert('pedidos/'+pd._id,{status:'separado',envio:envios[pd._id]});
+    toast('Envio registrado. As lojas já podem receber.');
+  }catch(e){toast('A conexão falhou no meio do envio. Confira o Histórico antes de tentar de novo.')}
+}
+
+/* ================= GESTOR: painel ================= */
+function vPainel(){
+  const ini=addDias(hoje(),-(painelDias-1));const sel=painelLoja==='todas'?LOJAS.map(l=>l.id):[painelLoja];
+  const peds=S.pedidos.filter(x=>x.data>=ini&&x.status!=='cancelado');const regs=F2()?perdasRegs().filter(r=>r.data>=ini):[];const cd=consumoDias();
+  const cards=LOJAS.map(L=>{const pd=peds.filter(x=>x.loja===L.id);let pedido=0,enviado=0;pd.forEach(x=>{if(!x.envio)return;Object.entries(x.itens).forEach(([pid,i])=>{pedido+=i.ped;enviado+=((x.envio.itens||{})[pid]||{}).env||0})});
+    const at=pedido?Math.round(Math.min(enviado,pedido)/pedido*100):null;const pr=regs.filter(r=>r.local===L.id).length;const vc=vencidosEm(L.id).length;const dv=pd.filter(x=>x.receb&&Object.keys(x.receb.diverg||{}).length).length;const vm=pd.filter(x=>x.receb&&Object.values(x.receb.itens||{}).some(r=>(r.dts||[]).some(d=>d.vC&&d.vL&&d.vC!==d.vL))).length;
+    const ruim=(v)=>v?'color:var(--bad);font-weight:700':'';
+    return `<div class="card"><div class="flexsp"><b>${L.nome}</b>${aberto(L.id)?'<span class="chip c-warn">pedido aberto</span>':''}${aCaminho(L.id).length?'<span class="chip c-info">entrega a caminho</span>':''}</div>
+    <table class="mini"><tr><td>Pedidos no período</td><td class="n">${pd.length}</td></tr><tr><td>Atendimento (enviado ÷ pedido)</td><td class="n">${at==null?'—':at+'%'}</td></tr>${F2()?`<tr><td>Perdas lançadas</td><td class="n" style="${ruim(pr)}">${pr}</td></tr><tr><td>Vencidos na loja agora</td><td class="n" style="${ruim(vc)}">${vc}</td></tr>`:`<tr><td>Itens pedidos fora da lista</td><td class="n">${pd.reduce((s,x)=>s+(x.extras||[]).length,0)}</td></tr>`}<tr><td>Entregas com diferença</td><td class="n" style="${ruim(dv)}">${dv}</td></tr>${F2()?`<tr><td>Validade diferente da central</td><td class="n" style="${ruim(vm)}">${vm}</td></tr>`:''}</table></div>`}).join('');
+  const cons={},perd={};
+  Object.entries(cd).forEach(([d,o])=>{if(d<ini)return;sel.forEach(l=>Object.entries(o[l]||{}).forEach(([pid,q])=>cons[pid]=r2((cons[pid]||0)+q)))});
+  regs.filter(r=>sel.includes(r.local)).forEach(r=>perd[r.p]=r2((perd[r.p]||0)+r.qtd));
+  const ids=[...new Set([...Object.keys(cons),...Object.keys(perd)])].sort((a,b)=>((cons[b]||0)+(perd[b]||0))-((cons[a]||0)+(perd[a]||0)));
+  const mx=Math.max(1,...ids.map(i=>Math.max(cons[i]||0,perd[i]||0)));
+  const porMot={};regs.filter(r=>sel.includes(r.local)).forEach(r=>porMot[r.motivo]=(porMot[r.motivo]||0)+1);
+  return `<h2>Painel das lojas</h2>
+  ${chips('pdias',[[7,'Últimos 7 dias'],[30,'Últimos 30 dias']],painelDias)}
+  <div class="list">${cards}</div>
+  <h3>${F2()?'Consumo e perdas por produto':'Consumo por produto'}</h3>
+  ${chips('ploja',[['todas','Todas as lojas'],...LOJAS.map(l=>[l.id,l.nome])],painelLoja)}
+  <p class="help">Consumo = última contagem + o que chegou − contagem nova. Aparece a partir da 2ª contagem de cada loja.</p>
+  <div class="legenda"><span><i style="background:var(--accent)"></i>consumo</span><span><i style="background:var(--bad)"></i>perda</span></div>
+  ${ids.length?`<div class="list">${ids.map(pid=>{const c=cons[pid]||0,pe=perd[pid]||0;const pc=c+pe?Math.round(pe/(c+pe)*100):0;
+   return `<div class="card"><div class="flexsp"><b>${esc(nomeP(pid))}</b>${pe?`<span class="chip ${pc>=10?'c-bad':'c-warn'}">${pc}% vira perda</span>`:''}</div><div class="flexsp sub"><span>Consumo <b class="num" style="color:var(--ink)">${fmt(c)}</b> ${esc(unP(pid))} · média ${fmt(c/painelDias)}/dia</span><span>Perda <b class="num" style="color:${pe?'var(--bad)':'var(--ink)'}">${fmt(pe)}</b></span></div>${barra(c,mx)}${pe?barra(pe,mx,'var(--bad)'):''}</div>`}).join('')}</div>`:vazio('Ainda sem dados de consumo','Os números aparecem depois que as lojas fizerem pelo menos dois pedidos com contagem.')}
+  ${Object.keys(porMot).length?`<h3>Perdas por motivo</h3><div class="card"><div class="chips">${Object.entries(porMot).sort((a,b)=>b[1]-a[1]).map(([m,n])=>`<span class="chip c-mute">${esc(m)}: <b class="num">${n}</b></span>`).join('')}</div></div>`:''}`;
+}
+
+/* ================= GESTOR: estoques ================= */
+function vEstoques(){
+  const h=hoje();
+  const cards=LOCAIS.map(L=>{const v=vencidosEm(L.id).length;const lg=lotesDe(L.id).filter(l=>l.vence&&l.vence>=h&&dias(h,l.vence)<=2).length;
+   return `<button class="kpi ${estLocal===L.id?'on':''}" data-local-sel="${L.id}"><div class="l"><b>${L.nome}</b></div><div class="v" style="color:${v?'var(--bad)':'var(--ink)'}">${v}</div><div class="l">vencidos · ${lg} vencem logo</div></button>`}).join('');
+  const loc=estLocal;const ehC=loc==='central';
+  const ps=S.produtos.map(p=>({p,e:estoque(loc,p.id)})).filter(x=>ehC||x.e.tot>0);const ord=x=>x.e.venc>0?0:x.e.logo>0?1:2;ps.sort((a,b)=>ord(a)-ord(b));
+  return `<h2>Estoques e validades</h2><p class="help">Toque num local. O estoque das lojas vem das entregas recebidas, menos o consumo (pela contagem) e as perdas.</p>
+  <div class="loc">${cards}</div><h3>${esc(nomeLocal(loc))}</h3>
+  ${ps.length?`<div class="list">${ps.map(({p,e})=>{const m=ehC?p.minC:minLoja(p,loc,'normal');const s=e.venc>0?['c-bad','Tem vencido','stripe-bad']:e.bom<=0?['c-bad','Zerado','stripe-bad']:e.logo>0?['c-warn','Vence logo','stripe-warn']:m!=null&&e.bom<m?['c-warn','Abaixo do mínimo','stripe-warn']:['c-ok','OK','stripe-ok'];
+   return `<div class="card ${s[2]}"><div class="row"><div style="min-width:0"><div class="nm">${esc(p.nome)}</div><div class="sub">mín. ${fmt(m)} · ${e.prox?'próx. venc. '+br(e.prox):e.venc?'':'sem validade'}${e.venc?` · <b style="color:var(--bad)">${fmt(e.venc)} vencido</b>`:''}${e.logo?` · <b style="color:var(--warn)">${fmt(e.logo)} vence em até 2 dias</b>`:''}</div></div><div style="text-align:right"><div class="big">${fmt(e.bom)}</div><div class="sub">${esc(p.un)}</div></div></div><div class="mt"><span class="chip ${s[0]}">${s[1]}</span></div></div>`}).join('')}</div>`:vazio('Sem estoque registrado','Aparece depois que a loja confirma o recebimento de uma entrega.')}`;
+}
+
+/* ================= GESTOR: histórico ================= */
+function vHist(){const ops=[['pedidos','Pedidos'],['lanc','Produção lançada'],...(F2()?[['producao','Produção × perda'],['inventarios','Inventários']]:[])];if(!ops.some(o=>o[0]===histSec))histSec='pedidos';return `<h2>Histórico</h2>${chips('hist',ops,histSec)}`+({pedidos:hPedidos,lanc:hLanc,producao:hProducao,inventarios:hInv}[histSec]||hPedidos)()}
+function hLanc(){const ini=addDias(hoje(),-6);const ls=S.prod.filter(l=>l.origem==='Produção'&&l.data>=ini);if(!ls.length)return vazio('Nenhuma produção lançada nos últimos 7 dias','A central lança em Central › Produção.');const dd=[...new Set(ls.map(l=>l.data))].sort().reverse();const tot={};ls.forEach(l=>tot[l.p]=r2((tot[l.p]||0)+l.qtd));
+  return `<p class="help">Últimos 7 dias: tudo o que a central lançou como produzido.</p><div class="card"><b>Total da semana</b><table class="mini">${Object.entries(tot).sort((a,b)=>b[1]-a[1]).map(([pid,q])=>`<tr><td>${esc(nomeP(pid))}</td><td class="n">${fmt(q)} ${esc(unP(pid))}</td></tr>`).join('')}</table></div>${dd.map(d=>`<h3>${d===hoje()?'Hoje':brAno(d)}</h3><div class="card"><table class="mini">${ls.filter(l=>l.data===d).map(l=>`<tr><td>${esc(nomeP(l.p))}<div class="sub">${esc(l.quem||'')}</div></td><td class="n">${fmt(l.qtd)} ${esc(unP(l.p))}</td></tr>`).join('')}</table></div>`).join('')}`}
+function hPedidos(){
+  const ps=S.pedidos.filter(x=>x.status!=='cancelado'&&(histLoja==='todas'||x.loja===histLoja));
+  return chips('hloja',[['todas','Todas'],...LOJAS.map(l=>[l.id,l.nome])],histLoja)+`<p class="help">Últimos 30 dias. Toque num pedido para ver pedido × enviado × chegou${F2()?' e as validades informadas pela loja':''}.</p>`+(ps.length?`<div class="list">${ps.map(pd=>cardPedido(pd,true)).join('')}</div>`:vazio('Nenhum pedido no período'));
+}
+function hProducao(){
+  const m=mes();const prod={},perd={};
+  S.prod.filter(l=>l.data.startsWith(m)&&l.origem==='Produção').forEach(l=>prod[l.p]=r2((prod[l.p]||0)+l.qtd));
+  perdasRegs().filter(r=>r.data.startsWith(m)&&r.motivo!=='Ajuste de contagem').forEach(r=>perd[r.p]=r2((perd[r.p]||0)+r.qtd));
+  const ids=[...new Set([...Object.keys(prod),...Object.keys(perd)])];
+  const ls=ids.map(pid=>({pid,pr:prod[pid]||0,pe:perd[pid]||0})).map(x=>Object.assign(x,{pc:x.pr?x.pe/x.pr*100:null})).sort((a,b)=>(b.pc??-1)-(a.pc??-1));
+  return `<p class="help">Mês atual. % perda = tudo que foi para o lixo (central + lojas) ÷ o que a central produziu.</p>${ls.length?`<div class="card" style="overflow-x:auto"><table class="mini"><tr><th>Produto</th><th class="n">Produzido</th><th class="n">Perdido</th><th class="n">% perda</th></tr>${ls.map(x=>`<tr><td>${esc(nomeP(x.pid))}</td><td class="n">${fmt(x.pr)}</td><td class="n">${fmt(x.pe)}</td><td class="n" style="${x.pc>=10?'color:var(--bad);font-weight:700':''}">${x.pc==null?'—':fmt(x.pc)+'%'}</td></tr>`).join('')}</table></div>`:vazio('Sem produção neste mês')}`;
+}
+function hInv(){
+  if(!S.invs.length)return vazio('Nenhum inventário lançado');
+  return `<div class="list">${S.invs.map(v=>`<details class="card"><summary><span>${br(v.data)} · ${esc(v.quem||'')}</span><span class="chip c-mute">${Object.keys(v.itens||{}).length} itens</span></summary><table class="mini"><tr><th>Produto</th><th class="n">Sistema</th><th class="n">Contado</th></tr>${Object.entries(v.itens||{}).map(([pid,i])=>`<tr><td>${esc(nomeP(pid))}</td><td class="n">${fmt(i.sis)}</td><td class="n">${fmt(i.cont)}</td></tr>`).join('')}</table></details>`).join('')}</div>`;
+}
+
+/* ================= GESTOR: etapa de implantação ================= */
+function cardEtapa(){
+  return F2()?`<div class="card"><div class="flexsp"><b>Etapa 2 ativa</b><span class="chip c-ok">pedidos + estoque e validade</span></div><p class="help" style="margin:6px 0 0">Estoque, validades, perdas e inventário estão ligados. <button class="linkbtn" data-fase="1">Voltar para a etapa 1</button></p></div>`
+  :`<div class="card"><div class="flexsp"><b>Etapa 1 de implantação</b><span class="chip c-info">pedidos + produção</span></div><p class="help" style="margin:6px 0 10px">Agora: pedidos das lojas, conferência na entrega e lançamento da produção. Quando a equipe estiver segura, ligue a próxima etapa.</p><button class="btn sec" data-fase="2">Ativar etapa 2: estoque e validade</button></div>`}
+async function mudarFase(f){
+  if(f===2){if(!(await confirmar('Ativar estoque e validade?','<p class="help">Ao ativar:</p><ul class="help" style="margin:0;padding-left:18px"><li>lojas ganham <b>Validades</b> e <b>Perdas</b>;</li><li>no recebimento, a loja passa a digitar a <b>validade da etiqueta</b>;</li><li>a central ganha <b>Validades</b>, <b>Perdas</b> e <b>Inventário</b>, e a produção passa a gerar etiqueta;</li><li>o estoque da central começa do zero: <b>faça o inventário da central logo em seguida</b>.</li></ul>','Ativar etapa 2')))return}
+  else if(!(await confirmar('Voltar para a etapa 1?','<p class="help">Estoque, validades, perdas e inventário ficam escondidos. Os dados já lançados são guardados.</p>','Voltar')))return;
+  try{if(f===2){for(const l of S.lotes)await upsert('lotes/'+l.id,{resta:0})}await put('config/sistema',{fase:f,desde:hoje(),por:nome});toast(f===2?'Etapa 2 ativada. Faça o inventário da central.':'Voltou para a etapa 1.')}catch(e){falhou(e)}
+}
+
+/* ================= GESTOR: produtos ================= */
+let editP=null;
+function vProdutos(){
+  return `${cardEtapa()}<h2>Produtos e mínimos</h2><p class="help">Só o gestor mexe aqui. O <b>mínimo da loja</b> gera a sugestão de pedido.${F2()?' O <b>mínimo da central</b> é opcional: se preencher, a central produz para manter esse estoque.':''}</p>
+  ${!(S.produtos||[]).length&&window.PRODUTOS_INICIAIS?`<div class="card"><b>Cadastro vazio</b><p class="help" style="margin:6px 0 10px">Carregue os ${window.PRODUTOS_INICIAIS.length} produtos da planilha (com mínimos), depois ajuste o que precisar.</p><button class="btn" data-seed="1">Carregar cadastro inicial</button></div>`:''}
+  ${editP==='__novo'?formProd({id:'__novo',nome:'',cat:'',un:'',val:null,cons:CONS[0],propria:true,minC:null,min:{}}):'<button class="btn" data-novo="1">+ Novo produto</button>'}
+  ${byCat(S.produtos||[],p=>editP===p.id?formProd(p):`<div class="card row"><div style="min-width:0"><div class="nm">${esc(p.nome)}</div><div class="sub">${esc(p.un)}${F2()?` · validade ${p.val!=null?p.val+' dias':'—'} · ${propria(p)?'produção própria':'comprado pronto'}`:''}<br>${LOJAS.map(L=>{const m=p.min&&p.min[L.id]||[];return L.nome+' '+fmt(m[0])+'/'+fmt(m[1])}).join(' · ')}${F2()&&p.minC!=null?' · central '+fmt(p.minC):''}</div></div><button class="btn sec small" data-edit="${p.id}">Editar</button></div>`)}`;
+}
+function formProd(p){
+  const m=L=>(p.min&&p.min[L])||[null,null];
+  return `<div class="card form" id="fp"><b>${p.id==='__novo'?'Novo produto':'Editar '+esc(p.nome)}</b>
+  <label class="f">Nome<input class="t" id="fp_nome" value="${esc(p.nome)}"></label>
+  <div class="grid2"><label class="f">Categoria<input class="t" id="fp_cat" value="${esc(p.cat)}" list="cats"></label><label class="f">Unidade<input class="t" id="fp_un" value="${esc(p.un)}"></label></div>
+  <datalist id="cats">${[...new Set((S.produtos||[]).map(x=>x.cat))].map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
+  ${F2()?`<div class="grid2"><label class="f">Validade (dias)<input class="t" inputmode="numeric" id="fp_val" value="${val(p.val)}"></label><label class="f">Mínimo central (opcional)<input class="t" inputmode="decimal" id="fp_minC" value="${val(p.minC)}"></label></div>
+  <label class="f">Conservação (sai na etiqueta)<select id="fp_cons">${CONS.map(c=>`<option ${(p.cons||CONS[0])===c?'selected':''}>${esc(c)}</option>`).join('')}</select></label>
+  <label class="checkrow"><input type="checkbox" id="fp_propria" ${propria(p)?'checked':''}><span><b>Produção própria</b><br><span class="sub">A loja é obrigada a digitar a validade da etiqueta no recebimento.</span></span></label>`:''}
+  <table class="mini"><tr><th>Mínimo na loja</th><th class="n">Normal</th><th class="n">Reforçado</th></tr>${LOJAS.map(L=>`<tr><td>${L.nome}</td><td class="n"><input class="t" style="width:80px;min-height:42px" inputmode="decimal" id="fp_${L.id}_0" value="${val(m(L.id)[0])}"></td><td class="n"><input class="t" style="width:80px;min-height:42px" inputmode="decimal" id="fp_${L.id}_1" value="${val(m(L.id)[1])}"></td></tr>`).join('')}</table>
+  <div class="grid2"><button class="btn sec" data-cancel="1">Cancelar</button><button class="btn" data-salvar="${p.id}">Salvar</button></div>
+  ${p.id!=='__novo'?`<button class="btn sec" style="color:var(--bad)" data-del="${p.id}">Excluir produto</button>`:''}</div>`;
+}
+async function salvarProd(id){
+  const g=k=>$('#fp_'+k).value.trim();const nm=g('nome');if(!nm){toast('Digite o nome do produto.');return}
+  if((S.produtos||[]).some(x=>x.id!==id&&x.nome.toLowerCase()===nm.toLowerCase())){toast('Já existe um produto com esse nome.');return}
+  const min={};LOJAS.forEach(L=>{const a=num(g(L.id+'_0')),b=num(g(L.id+'_1'));if(a!=null||b!=null)min[L.id]=[a,b]});
+  const novo={id:id==='__novo'?nm.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+Math.random().toString(36).slice(2,5):id,nome:nm,cat:g('cat')||'Outros',un:g('un')||'unidade',min};const ant=(S.produtos||[]).find(x=>x.id===id)||{};if(F2()){Object.assign(novo,{val:num(g('val')),cons:$('#fp_cons').value,propria:$('#fp_propria').checked,minC:num(g('minC'))})}else Object.assign(novo,{val:ant.val??null,cons:ant.cons||CONS[0],propria:ant.propria??null,minC:ant.minC??null});
+  const lista=(S.produtos||[]).slice();const i=lista.findIndex(x=>x.id===id);if(i>=0)lista[i]=novo;else lista.push(novo);
+  try{await put('config/produtos',{itens:lista});editP=null;toast('Produto salvo.');document.activeElement.blur();render()}catch(e){falhou(e)}
+}
+
+const VIEWS={pedido:vPedido,receber:vReceber,lvalid:()=>vValid(perfil.loja),lperdas:()=>vPerdas(perfil.loja),lhist:vLHist,
+ produzir:vProduzir,producao:vProducao,validades:()=>vValid('central'),perdas:()=>vPerdas('central'),inventario:vInv,
+ separacao:vSep,painel:vPainel,estoques:vEstoques,historico:vHist,produtos:vProdutos};
+
+/* ================= eventos ================= */
+function sheetAddProd(loja){
+  sheet(`<h2>Adicionar produto</h2><label class="f">Produto${prodSelect('ap_p','',p=>!(qtdPedido(loja,p)>0))}</label><div class="row"><b>Quantidade</b>${stepper('ap_q',1,'data-free="1"')}</div><div class="acts"><button class="btn sec" data-ap="x">Voltar</button><button class="btn" data-ap="ok">Adicionar</button></div>`,(e,close)=>{const b=e.target.closest('[data-ap]');if(!b)return;if(b.dataset.ap==='ok'){const pid=$('#ap_p').value;const q=num($('#ap_q').value);if(!pid||!q){toast('Escolha o produto e a quantidade.');return}editaLoja(loja,pid,'ped',q)}close();render()});
+}
+function sheetExtra(loja){
+  sheet(`<h2>Item fora da lista</h2><p class="help" style="margin:0">Para algo que não está no cadastro. O gestor vê e decide quanto mandar.</p><label class="f">O que você precisa?<input class="t" id="ex_n" data-free="1" placeholder="Ex.: Rúcula"></label><div class="grid2"><label class="f">Quantidade<input class="t" id="ex_q" data-free="1" inputmode="decimal"></label><label class="f">Unidade<input class="t" id="ex_u" data-free="1" placeholder="Ex.: maço"></label></div><label class="f">Observação (opcional)<input class="t" id="ex_o" data-free="1"></label><div class="acts"><button class="btn sec" data-ex="x">Voltar</button><button class="btn" data-ex="ok">Adicionar</button></div>`,async(e,close)=>{const b=e.target.closest('[data-ex]');if(!b)return;if(b.dataset.ex==='ok'){const n=$('#ex_n').value.trim(),q=num($('#ex_q').value);if(!n||!q){toast('Digite o item e a quantidade.');return}const ex=extrasRasc(loja).concat([{nome:n,qtd:q,un:$('#ex_u').value.trim()||'unidade',obs:$('#ex_o').value.trim()}]);close();try{await upsert('contagens/'+loja,{extras:ex})}catch(err){falhou(err)}return}close()});
+  setTimeout(()=>{const i=$('#ex_n');i&&i.focus()},50);
+}
+document.addEventListener('click',async e=>{
+  const t=e.target.closest('button');if(!t||t.closest('.sheet')&&!t.dataset.step)return;
+  if(t.dataset.perfil){fechaToast();const [tp,lj]=t.dataset.perfil.split(':');const n=$('#nomeIn');if(n){nome=n.value.trim();LS.set('nome',nome)}if(!nome){toast('Digite seu nome primeiro.');n&&n.focus();return}perfil={tipo:tp,loja:lj||null};LS.set('perfil',perfil);fPer={p:'',q:null,m:''};window.scrollTo(0,0);render();return}
+  if(t.id==='entrar'){const em=$('#lgEmail').value.trim(),se=$('#lgSenha').value;if(!em||!se){toast('Digite e-mail e senha.');return}t.disabled=true;try{await firebase.auth().signInWithEmailAndPassword(em,se)}catch(err){t.disabled=false;const c=err&&err.code||'';toast(/invalid|wrong|not-found|credential/.test(c)?'E-mail ou senha incorretos.':/network/.test(c)?'Sem internet. Tente de novo.':'Não consegui entrar ('+c+').')}return}
+  if(t.id==='sair'){LOJAS.forEach(L=>flush(L.id));perfil=null;LS.set('perfil',null);await firebase.auth().signOut();location.reload();return}
+  if(t.dataset.seed){umaVez('seed',async()=>{try{await put('config/produtos',{itens:window.PRODUTOS_INICIAIS});toast('Cadastro carregado.')}catch(e){falhou(e)}});return}
+  if(t.id==='whoBtn'){LOJAS.forEach(L=>flush(L.id));perfil=null;LS.set('perfil',null);render();return}
+  if(t.dataset.tab){fechaToast();editP=null;fPer={p:'',q:null,m:''};irPara(t.dataset.tab);return}
+  if(t.dataset.goto){irPara(t.dataset.goto);return}
+  if(t.dataset.passo){const loja=perfil.loja;await flush(loja);passo[loja]=t.dataset.passo;LS.set('passo',passo);window.scrollTo(0,0);render();return}
+  if(t.dataset.step){const inp=document.getElementById(t.dataset.for);let v=num(inp.value);v=Math.max(0,r2((v??0)+Number(t.dataset.step)));inp.value=fmt(v);inp.classList.remove('empty');onVal(inp);return}
+  if(t.dataset.modo){const loja=perfil.loja;if(modo(loja)===t.dataset.modo)return;S.cont[loja]=Object.assign({},S.cont[loja],{modo:t.dataset.modo});render();try{await upsert('contagens/'+loja,{modo:t.dataset.modo})}catch(e){falhou(e)}return}
+  if(t.dataset.addprod){sheetAddProd(perfil.loja);return}
+  if(t.dataset.addextra){sheetExtra(perfil.loja);return}
+  if(t.dataset.tiraextra!=null){const loja=perfil.loja;const ex=extrasRasc(loja).filter((x,i)=>i!==Number(t.dataset.tiraextra));try{await upsert('contagens/'+loja,{extras:ex})}catch(e){falhou(e)}return}
+  if(t.id==='enviaPed'){umaVez('ped',enviarPedido);return}
+  if(t.dataset.cancelaped){umaVez('cancped',()=>cancelarPedido(t.dataset.cancelaped));return}
+  if(t.dataset.receber){umaVez('rec',()=>receber(t.dataset.receber));return}
+  if(t.id==='despachar'){umaVez('envio',despachar);return}
+  if(t.id==='salvaProd'){umaVez('prod',salvarProducao);return}
+  if(t.id==='salvaPerda'){umaVez('perda',()=>salvarPerda(t.dataset.local));return}
+  if(t.id==='lancaInv'){umaVez('inv',lancarInv);return}
+  if(t.dataset.lancar){fProd={p:t.dataset.lancar,q:num(t.dataset.q),data:null};LS.set('fprod',fProd);irPara('producao');return}
+  if(t.dataset.etq){const l=S.lotes.find(x=>x.id===t.dataset.etq)||S.prod.find(x=>x.id===t.dataset.etq);if(l)abrirEtiqueta(l,false);return}
+  if(t.dataset.mot){fPer.m=t.dataset.mot;fPer.p=$('#pe_p').value;fPer.q=num($('#pe_q').value);render();return}
+  if(t.dataset.localSel){estLocal=t.dataset.localSel;LS.set('painel',estLocal);render();return}
+  if(t.dataset.hist){histSec=t.dataset.hist;LS.set('hist',histSec);render();return}
+  if(t.dataset.hloja){histLoja=t.dataset.hloja;LS.set('hl',histLoja);render();return}
+  if(t.dataset.ploja){painelLoja=t.dataset.ploja;LS.set('pl',painelLoja);render();return}
+  if(t.dataset.pdias){painelDias=Number(t.dataset.pdias);LS.set('pd',painelDias);render();return}
+  if(t.dataset.desfaz){const l=S.prod.find(x=>x.id===t.dataset.desfaz);if(l&&await confirmar('Desfazer lançamento?',`<p class="help">Apaga ${fmt(l.qtd)} de ${esc(nomeP(l.p))} (lote ${esc(l.codigo||'')}).</p>`,'Desfazer',true)){try{await db.doc('lotes/'+l.id).delete();toast('Lançamento apagado.')}catch(e){falhou(e)}}return}
+  if(t.dataset.desc){const local=t.dataset.local;const l=lotesDe(local).find(x=>x.id===t.dataset.desc);if(!l)return;if(await confirmar('Descartar vencido?',`<p class="help">${fmt(l.resta)} ${esc(unP(l.p))} de ${esc(nomeP(l.p))} vai para o lixo e entra em Perdas como “Venceu”.</p>`,'Descartar',true)){umaVez('desc',async()=>{try{await registrarPerda(local,l.p,l.resta,'Venceu',nome,l.id);toast('Descartado e lançado em perdas.');render()}catch(e){falhou(e)}})}return}
+  if(t.dataset.fase){umaVez('fase',()=>mudarFase(Number(t.dataset.fase)));return}
+  if(t.dataset.edit){editP=t.dataset.edit;render();return}
+  if(t.dataset.novo){editP='__novo';render();return}
+  if(t.dataset.cancel){editP=null;document.activeElement.blur();render();return}
+  if(t.dataset.salvar){umaVez('prodcad',()=>salvarProd(t.dataset.salvar));return}
+  if(t.dataset.del){const p=P(t.dataset.del);if(await confirmar('Excluir produto?',`<p class="help">${esc(p.nome)} sai da lista de todas as lojas. O histórico continua.</p>`,'Excluir',true)){try{await put('config/produtos',{itens:S.produtos.filter(x=>x.id!==p.id)});editP=null;toast('Produto excluído.')}catch(e){falhou(e)}}return}
+});
+function onVal(inp){
+  const k=inp.dataset.kind;const v=num(inp.value);inp.classList.toggle('empty',v==null);
+  if(k==='tem'){editaLoja(inp.dataset.loja,inp.dataset.pid,'tem',v);atualizaLeve()}
+  else if(k==='ped'){editaLoja(inp.dataset.loja,inp.dataset.pid,'ped',v??0);atualizaLeve()}
+  else if(k==='prq'){fProd.q=v;LS.set('fprod',fProd)}
+  else if(k==='peq'){fPer.q=v}
+  else if(k==='rec'){const o=(recQ[inp.dataset.e]=recQ[inp.dataset.e]||{});(o[inp.dataset.pid]=o[inp.dataset.pid]||{}).q=v}
+  else if(k==='inv'){const pid=inp.dataset.pid;inv[pid]=v;LS.set('inv',inv);const d=v==null?null:r2(v-estoque('central',pid).tot);const el=document.querySelector(`[data-invd="${pid}"]`);if(el)el.innerHTML=chipInv(d);const w=document.querySelector(`[data-invdtw="${pid}"]`);if(w)w.hidden=!(d>0);const b=$('#lancaInv');if(b){const n=Object.values(inv).filter(x=>x!=null).length;b.textContent=`Lançar inventário (${n} contados)`;b.disabled=!n||S.ro}}
+}
+document.addEventListener('input',e=>{if(e.target.dataset.kind)onVal(e.target)});
+document.addEventListener('change',async e=>{const t=e.target;
+  if(t.id==='pr_p'||t.id==='pr_d'){fProd={p:$('#pr_p').value,q:num($('#pr_q').value),data:$('#pr_d').value||null};LS.set('fprod',fProd);t.blur();render()}
+  if(t.id==='pe_p'){fPer.p=t.value;fPer.q=num($('#pe_q').value);t.blur();render()}
+  if(t.dataset.invdt){invDt[t.dataset.invdt]=t.value;LS.set('invdt',invDt)}
+  if(t.dataset.recv){const [eid,pid,k]=t.dataset.recv.split('|');const o=(recQ[eid]=recQ[eid]||{});const it=(o[pid]=o[pid]||{});it.dts=it.dts||[];it.dts[Number(k)]=t.value||null;t.classList.remove('erro');
+    const pd=S.pedidos.find(x=>x._id===eid);const x=pd&&porcoes(pd,pid)[Number(k)];const el=document.querySelector(`[data-recd="${t.dataset.recv}"]`);if(el)el.innerHTML=chipVal(t.value,x)}
+  if(t.dataset.env){const pd=S.pedidos.find(x=>x._id===t.dataset.env);const pid=t.dataset.pid;const v=num(t.value);if(!pd)return;const i=pd.itens[pid];try{await upsert('pedidos/'+pd._id,{itens:{[pid]:{env:v==null||v===i.ped?null:v}}})}catch(err){falhou(err)}}
+  if(t.dataset.envx){const [id,k]=t.dataset.envx.split('|');const pd=S.pedidos.find(x=>x._id===id);if(!pd)return;const ex=(pd.extras||[]).map(x=>Object.assign({},x));ex[Number(k)].env=num(t.value);try{await upsert('pedidos/'+id,{extras:ex})}catch(err){falhou(err)}}
+});
+document.addEventListener('focusout',()=>{setTimeout(()=>{if(deferRender){const ae=document.activeElement;if(!ae||!$('#main').contains(ae)||!(ae.tagName==='INPUT'||ae.tagName==='SELECT'))render()}},120)});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'&&!e.target.dataset.free)e.target.blur()});
+
+/* ================= conexão ================= */
+async function iniciar(){
+  render();const claude=window.claude;
+  if((!claude||!claude.use)&&window.firebase&&window.FIREBASE_CONFIG){iniciarFirebase();return}
+  if(!claude||!claude.use){S.produtos=[];render();return}
+  try{db=await claude.use('db')}catch(e){db=null}
+  if(!db){S.produtos=[];render();return}
+  S.online=true;
+  try{const u=await claude.use('user');if(u&&u.can&&(await u.can('data.write'))===false)S.ro=true}catch(e){}
+  assinar();
+}
+/* ---- versão GitHub: Firebase (login por unidade + Firestore) ---- */
+function bancoFirebase(fs){
+  const snap=s=>({id:s.id,exists:s.exists,data:()=>s.data(),metadata:{}});
+  const erro=e=>({code:e&&e.code==='permission-denied'?'sem_permissao':(e&&e.code)||'unavailable',message:e&&e.message});
+  function doc(path){const ref=fs.doc(path);return{id:ref.id,path,
+    get:async()=>snap(await ref.get()),
+    set:async d=>{try{await ref.set(d)}catch(e){throw erro(e)}},
+    update:async d=>{let s;try{s=await ref.get()}catch(e){throw erro(e)}if(!s.exists)throw{code:'invalid_argument',message:'documento não existe'};try{await ref.set(d,{merge:true})}catch(e){throw erro(e)}}, // mesclagem profunda, como no Claude
+    delete:async()=>{try{await ref.delete()}catch(e){throw erro(e)}},
+    onSnapshot:(n,e)=>ref.onSnapshot(s=>n(snap(s)),x=>e&&e(erro(x))),
+    acquire:async({holder,ttlMs})=>{const agoraMs=Date.now();return fs.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.exists?s.data():{};if(d.exp&&d.exp>agoraMs&&d.holder!==holder)return{acquired:false};tx.set(ref,{holder,exp:agoraMs+(ttlMs||30000)});return{acquired:true}})}}}
+  function q(base){return{where:(f,o,v)=>q(base.where(f,o,v)),orderBy:(f,d)=>q(base.orderBy(f,d||'asc')),limit:n=>q(base.limit(n)),
+    get:async()=>{const s=await base.get();return{docs:s.docs.map(snap),size:s.size,empty:s.empty}},
+    onSnapshot:(n,e)=>base.onSnapshot(s=>n({docs:s.docs.map(snap),size:s.size,empty:s.empty}),x=>e&&e(erro(x)))}}
+  return{doc,collection:p=>Object.assign(q(fs.collection(p)),{path:p,doc:id=>doc(p+'/'+id)})};
+}
+let assinado=false;
+function iniciarFirebase(){
+  MODO='firebase';
+  if(String(window.FIREBASE_CONFIG.apiKey||'').startsWith('COLE')){S.produtos=[];render();return}
+  firebase.initializeApp(window.FIREBASE_CONFIG);const fs=firebase.firestore();
+  try{fs.settings({ignoreUndefinedProperties:true,merge:true})}catch(e){}
+  fs.enablePersistence({synchronizeTabs:true}).catch(()=>{}); // funciona com internet instável
+  db=bancoFirebase(fs);
+  firebase.auth().onAuthStateChanged(u=>{USER=u;
+    if(u){const pre=String(u.email||'').split('@')[0].toLowerCase();FIXO=PERFIL_EMAIL[pre]||null;
+      if(FIXO&&FIXO!=='gestor'&&perfil&&(perfil.tipo+(perfil.loja?':'+perfil.loja:''))!==FIXO){perfil=null;LS.set('perfil',null)}
+      S.online=true;if(!assinado){assinado=true;assinar()}}
+    render()});
+}
+function assinar(){
+  const err=e=>{if(e&&e.code==='revoked'){S.online=false;render()}};const ok=()=>render();
+  db.doc('config/sistema').onSnapshot(s=>{S.fase=(s.exists&&s.data().fase)||1;ok()},err);
+  db.doc('config/produtos').onSnapshot(s=>{S.produtos=s.exists?(s.data().itens||[]):[];ok()},err);
+  LOJAS.forEach(L=>db.doc('contagens/'+L.id).onSnapshot(s=>{S.cont[L.id]=s.exists?s.data():{};ok()},err));
+  db.collection('lotes').where('resta','>',0).onSnapshot(s=>{S.lotes=s.docs.map(d=>Object.assign({id:d.id},d.data()));ok()},err);
+  db.collection('lotes').where('data','>=',janela()).onSnapshot(s=>{S.prod=s.docs.map(d=>Object.assign({id:d.id},d.data()));ok()},err);
+  db.collection('lotesLoja').where('resta','>',0).onSnapshot(s=>{S.lotesL=s.docs.map(d=>Object.assign({id:d.id},d.data()));ok()},err);
+  db.doc('perdas/'+mes()).onSnapshot(s=>{S.perdas=s.exists?s.data():{};ok()},err);
+  db.doc('perdas/'+mesAnt()).onSnapshot(s=>{S.perdasAnt=s.exists?s.data():{};ok()},err);
+  db.doc('consumo/'+mes()).onSnapshot(s=>{S.cons=s.exists?s.data():{};ok()},err);
+  db.doc('consumo/'+mesAnt()).onSnapshot(s=>{S.consAnt=s.exists?s.data():{};ok()},err);
+  db.collection('pedidos').where('data','>=',addDias(hoje(),-30)).onSnapshot(s=>{S.pedidos=s.docs.map(d=>Object.assign({_id:d.id},d.data())).sort((a,b)=>(b.data+b.hora+b._id)<(a.data+a.hora+a._id)?-1:1);ok()},err);
+  db.collection('inventarios').orderBy('data','desc').limit(10).onSnapshot(s=>{S.invs=s.docs.map(d=>d.data());ok()},err);
+}
+setTimeout(()=>{if(S.produtos==null){S.produtos=[];render()}},11000);
+iniciar();
+})();
+</script>
+
+</body>
+</html>
